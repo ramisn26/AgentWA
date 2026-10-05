@@ -11,3 +11,7 @@
 pulse.pavirami.in {
     reverse_proxy n8n:5678
 }
+
+crackers.pavirami.in {
+    reverse_proxy 127.0.0.1:8081
+}
