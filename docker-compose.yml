@@ -85,5 +85,5 @@ volumes:
   media:
   uploads:
 networks:
-edge:
-  name: agentwa_edge
+  edge:
+    name: agentwa_edge
