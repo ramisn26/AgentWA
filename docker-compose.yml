@@ -67,7 +67,7 @@ services:
       redis:
         condition: service_healthy
 
-  forgecrm-frontend:
+  agentwa-frontend:
     build:
       context: ./frontend
     restart: unless-stopped
@@ -84,3 +84,6 @@ volumes:
   secrets:
   media:
   uploads:
+networks:
+edge:
+  name: agentwa_edge
