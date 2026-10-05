@@ -276,6 +276,8 @@ router.post('/webhook/whatsapp', async (req, res) => {
     // operators know inbound webhooks are unverified (forgeable).
     const sig = verifyMetaSignature(req);
     if (sig === false) {
+      // Say why, so a wrong App Secret isn't a silent failure. Never logs secrets.
+      console.warn(`[webhook] REJECTED: invalid or missing X-Hub-Signature-256 (header present: ${!!req.get('x-hub-signature-256')}, phone_number_id: ${req.body?.entry?.[0]?.changes?.[0]?.value?.metadata?.phone_number_id || 'n/a'}) — check META_APP_SECRET matches the Meta app that sends this number's webhooks`);
       return res.status(403).json({ error: 'Invalid webhook signature' });
     }
     if (sig === null) {
