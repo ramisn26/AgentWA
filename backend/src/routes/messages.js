@@ -265,6 +265,31 @@ router.get('/numbers', async (req, res) => {
       };
     });
 
+    // Admins also see every connected, active WhatsApp account even before it
+    // has any messages, so a freshly added number can be picked in the broadcast
+    // "From" list and in Chats. (Non-admin users stay scoped to their contacts.)
+    if (isAdmin(req.user)) {
+      const seen = new Set(enriched.map(r => String(r.wa_number).replace(/\D/g, '')));
+      const { rows: accts } = await pool.query(
+        `SELECT display_name, display_phone_number FROM coexistence.whatsapp_accounts
+          WHERE is_active = TRUE AND display_phone_number IS NOT NULL AND display_phone_number <> ''
+          ORDER BY is_default DESC, id ASC`
+      );
+      for (const a of accts) {
+        const digits = String(a.display_phone_number).replace(/\D/g, '');
+        if (!digits || seen.has(digits)) continue;
+        seen.add(digits);
+        enriched.push({
+          wa_number: digits,
+          last_message_time: null,
+          message_count: 0,
+          display_name: a.display_name || null,
+          profile_picture_url: null,
+          unread_chats: 0,
+        });
+      }
+    }
+
     res.json(enriched);
   } catch (err) {
     console.error('[messages] /numbers error:', err.message);
