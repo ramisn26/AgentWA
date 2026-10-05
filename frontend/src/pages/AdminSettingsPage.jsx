@@ -773,6 +773,16 @@ function WhatsappAccountsTab() {
     setShowForm(true);
   };
 
+  const removeAccount = async (acc) => {
+    if (!window.confirm(`Remove ${acc.displayName || 'this number'}? Its AI agent will be unlinked. Chat history is kept.`)) return;
+    try {
+      await api.whatsappAccounts.delete(acc.id);
+      await refresh();
+    } catch (err) {
+      alert(err.message || 'Delete failed');
+    }
+  };
+
   const save = async () => {
     if (!form.phoneNumberId.trim() || !form.wabaId.trim()) {
       alert('Phone Number ID and WhatsApp Business Account ID are required');
@@ -817,21 +827,18 @@ function WhatsappAccountsTab() {
     <div style={{ flex: 1, padding: 24, overflow: 'auto', fontFamily: FONT }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
         <div>
-          <h2 style={{ fontSize: 20, fontWeight: 700, color: C.text, margin: 0 }}>WhatsApp Account</h2>
+          <h2 style={{ fontSize: 20, fontWeight: 700, color: C.text, margin: 0 }}>WhatsApp Accounts</h2>
           <p style={{ fontSize: 12, color: C.textMuted, margin: '4px 0 0' }}>
-            The single Business Account (WABA) used to send templates, broadcasts and automation messages.
+            Connect one or more WhatsApp numbers. Each number can have its own AI agent and is used to send templates, broadcasts and automation messages.
           </p>
         </div>
-        {/* Single-account system: connecting is only possible when none exists yet. */}
-        {accounts.length === 0 && (
-          <button onClick={startCreate} style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            padding: '8px 14px', background: C.primary, color: '#fff', border: 'none',
-            borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: FONT,
-          }}>
-            <Plus size={15} /> Connect account
-          </button>
-        )}
+        <button onClick={startCreate} style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '8px 14px', background: C.primary, color: '#fff', border: 'none',
+          borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: FONT,
+        }}>
+          <Plus size={15} /> {accounts.length === 0 ? 'Connect account' : 'Add number'}
+        </button>
       </div>
 
       {loading ? (
@@ -901,6 +908,15 @@ function WhatsappAccountsTab() {
                     <button onClick={() => startEdit(acc)} style={iconBtnStyle} title="Edit / update token">
                       <Eye size={14} />
                     </button>
+                    {accounts.length > 1 && (
+                      <button
+                        onClick={() => removeAccount(acc)}
+                        style={{ ...iconBtnStyle, color: '#A32D2D' }}
+                        title="Remove this number"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

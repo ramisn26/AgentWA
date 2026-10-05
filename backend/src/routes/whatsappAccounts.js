@@ -112,12 +112,6 @@ router.post('/whatsapp-accounts', adminOnly, async (req, res) => {
       return res.status(400).json({ error: 'Phone Number ID, WhatsApp Business Account ID and Permanent Access Token are required' });
     }
 
-    // Single-account system: refuse to register a second WhatsApp Business account.
-    const { rows: existing } = await pool.query('SELECT COUNT(*)::int AS n FROM coexistence.whatsapp_accounts');
-    if (existing[0].n >= 1) {
-      return res.status(409).json({ error: 'Only one WhatsApp Business account is allowed. Edit the existing account instead.' });
-    }
-
     // Best-effort: resolve the human-readable number + verified business name
     // from Meta so chat threading and display still work without the user
     // typing them. Saving proceeds even if the lookup fails (logged).
@@ -141,17 +135,21 @@ router.post('/whatsapp-accounts', adminOnly, async (req, res) => {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
-      // The lone account is always the default and active.
+      // The first account becomes the default; later ones are added as
+      // non-default (only one default row is allowed by a unique index).
+      const { rows: cnt } = await client.query('SELECT COUNT(*)::int AS n FROM coexistence.whatsapp_accounts');
+      const makeDefault = cnt[0].n === 0;
       const { rows } = await client.query(
         `INSERT INTO coexistence.whatsapp_accounts
           (display_name, display_phone_number, phone_number_id, waba_id, meta_app_id,
            access_token_encrypted, verify_token_encrypted, is_default, is_active)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,TRUE,TRUE)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,TRUE)
          RETURNING *`,
         [
           displayName, displayPhoneNumber, phoneNumberId.trim(), wabaId.trim(),
           metaAppId?.trim() || null,
           encrypt(accessToken.trim()), encrypt((verifyToken || '').trim()),
+          makeDefault,
         ]
       );
       await client.query('COMMIT');
@@ -248,17 +246,37 @@ router.put('/whatsapp-accounts/:id', adminOnly, async (req, res) => {
 
 router.delete('/whatsapp-accounts/:id', adminOnly, async (req, res) => {
   try {
-    // Single-account system: never delete the connected account — it would stop
-    // all sends. To switch numbers, edit the existing account instead.
+    // Never delete the last account — it would stop all sends. To switch
+    // numbers, edit the existing account instead.
     const { rows: cnt } = await pool.query('SELECT COUNT(*)::int AS n FROM coexistence.whatsapp_accounts');
     if (cnt[0].n <= 1) {
       return res.status(409).json({ error: 'Cannot delete the only WhatsApp Business account. Edit it to change the connected number.' });
     }
-    const { rowCount } = await pool.query(
-      'DELETE FROM coexistence.whatsapp_accounts WHERE id = $1',
-      [req.params.id]
-    );
-    if (rowCount === 0) return res.status(404).json({ error: 'Not found' });
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const { rows: del } = await client.query(
+        'DELETE FROM coexistence.whatsapp_accounts WHERE id = $1 RETURNING is_default',
+        [req.params.id]
+      );
+      if (del.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ error: 'Not found' });
+      }
+      // If the default account was removed, promote the oldest remaining one.
+      if (del[0].is_default) {
+        await client.query(
+          `UPDATE coexistence.whatsapp_accounts SET is_default = TRUE
+            WHERE id = (SELECT id FROM coexistence.whatsapp_accounts ORDER BY id ASC LIMIT 1)`
+        );
+      }
+      await client.query('COMMIT');
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
     res.json({ ok: true });
   } catch (err) {
     console.error('[whatsapp-accounts] delete error:', err.message);
@@ -293,14 +311,16 @@ async function getAccountWithToken(accountId) {
 }
 
 /**
- * Return the single connected account (this product is capped at one). Used as
- * a fallback when phone-number matching can't resolve an account — e.g. the
- * display number hasn't been derived from Meta yet.
+ * Return the connected account ONLY when exactly one exists. Used as a fallback
+ * when phone-number matching can't resolve an account — e.g. the display number
+ * hasn't been derived from Meta yet. With several numbers connected it returns
+ * null on purpose: guessing could send a message from the wrong number.
  */
 async function getSingleAccount() {
   const { rows } = await pool.query(
-    'SELECT * FROM coexistence.whatsapp_accounts ORDER BY is_default DESC, id ASC LIMIT 1'
+    'SELECT * FROM coexistence.whatsapp_accounts ORDER BY is_default DESC, id ASC LIMIT 2'
   );
+  if (rows.length !== 1) return null;
   return rowToCreds(rows[0]);
 }
 

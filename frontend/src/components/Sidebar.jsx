@@ -1,6 +1,6 @@
 import {
   Home, Zap, LayoutTemplate, MessageCircle, Users,
-  Megaphone, Image as ImageIcon, Info, KanbanSquare, Bot,
+  Megaphone, Image as ImageIcon, Info, KanbanSquare, Bot, Phone,
   ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { C, FONT } from '../constants.js';
@@ -9,6 +9,8 @@ const NAV_ITEMS = [
   { id: 'home', label: 'Home', Icon: Home },
   { id: 'chatbot-builder', label: 'Automations', Icon: Zap },
   { id: 'ai-agent-builder', label: 'AI Agents', Icon: Bot },
+  // Lives in Settings → WhatsApp Accounts; surfaced here so it isn't buried.
+  { id: 'whatsapp-numbers', label: 'WhatsApp Numbers', Icon: Phone, to: ['admin-settings', 'whatsapp-accounts'], pageKey: 'admin-settings:whatsapp-accounts' },
   { id: 'template-builder', label: 'Template Builder', Icon: LayoutTemplate },
   { id: 'media-library', label: 'Media', Icon: ImageIcon },
   { id: 'chats', label: 'Chats', Icon: MessageCircle },
@@ -18,12 +20,12 @@ const NAV_ITEMS = [
   { id: 'about', label: 'About Us', Icon: Info },
 ];
 
-export default function Sidebar({ activePage, onPageChange, collapsed, setCollapsed, user }) {
+export default function Sidebar({ activePage, onPageChange, onNavigate, collapsed, setCollapsed, user }) {
   // Admins see every nav item; other roles see only the pages granted to them
   // (user.pages from the session). Falls back to all items if pages is missing.
   const visibleItems = (user?.role === 'admin' || !Array.isArray(user?.pages))
     ? NAV_ITEMS
-    : NAV_ITEMS.filter(item => user.pages.includes(item.id));
+    : NAV_ITEMS.filter(item => user.pages.includes(item.pageKey || item.id));
   return (
     <div style={{
       width: collapsed ? 68 : 224,
@@ -44,7 +46,7 @@ export default function Sidebar({ activePage, onPageChange, collapsed, setCollap
           return (
             <div
               key={item.id}
-              onClick={() => onPageChange(item.id)}
+              onClick={() => (item.to && onNavigate ? onNavigate(...item.to) : onPageChange(item.id))}
               title={collapsed ? item.label : ''}
               style={{
                 display: 'flex',

@@ -138,6 +138,7 @@ export default function App() {
           <Sidebar
             activePage={page}
             onPageChange={setPage}
+            onNavigate={navigate}
             collapsed={sidebarCollapsed}
             setCollapsed={setSidebarCollapsed}
             user={user}
