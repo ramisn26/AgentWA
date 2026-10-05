@@ -75,6 +75,7 @@ services:
       # Bound to localhost only; public access goes through Caddy.
       # 8081 avoids a clash with prod on 8080.
       - "127.0.0.1:${HTTP_PORT:-8081}:80"
+    networks: [default, edge]
     depends_on:
       - forgecrm-backend
 
