@@ -21,7 +21,10 @@ export const MODEL_CATALOG = {
   //   { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
   // ],
     openai: [
-    { value: 'gpt-5.5', label: 'GPT-5(Recommended)' },
+    { value: 'gpt-5.6-sol', label: 'GPT-5.6 Sol (Most Capable)' },
+    { value: 'gpt-5.6-terra', label: 'GPT-5.6 Terra (Balanced)' },
+    { value: 'gpt-5.6-luna', label: 'GPT-5.6 Luna (Fast & Cheap)' },
+    { value: 'gpt-5.5', label: 'GPT-5.5' },
     { value: 'gpt-4o', label: 'GPT-4o' },
     { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
   ],

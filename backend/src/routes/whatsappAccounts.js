@@ -167,6 +167,188 @@ router.post('/whatsapp-accounts', adminOnly, async (req, res) => {
   }
 });
 
+/* ------------------------------------------------------------------ *
+ * Embedded Signup (incl. coexistence / "connect existing WhatsApp
+ * Business app"). The browser runs Meta's popup and hands us the
+ * short-lived `code` + the WABA / phone number IDs from the session
+ * message; we exchange the code for a business token, subscribe our app
+ * to the WABA's webhooks, save the account and (for coexistence) ask Meta
+ * to start the contacts + history sync — which must be requested within
+ * 24 hours of onboarding.
+ * Env: META_APP_ID, META_EMBEDDED_SIGNUP_CONFIG_ID, and the app secret in
+ * META_EMBEDDED_APP_SECRET (falls back to the first META_APP_SECRET).
+ * ------------------------------------------------------------------ */
+function metaVersion() { return process.env.META_EMBEDDED_API_VERSION || 'v25.0'; }
+
+function embeddedAppSecret() {
+  if (process.env.META_EMBEDDED_APP_SECRET) return process.env.META_EMBEDDED_APP_SECRET.trim();
+  return String(process.env.META_APP_SECRET || '').split(',').map(s => s.trim()).filter(Boolean)[0] || '';
+}
+
+async function graphJson(url, opts = {}) {
+  const resp = await fetch(url, opts);
+  const text = await resp.text();
+  let body = {};
+  try { body = JSON.parse(text); } catch { /* non-JSON */ }
+  if (!resp.ok) throw new Error(body?.error?.message || text || `HTTP ${resp.status}`);
+  return body;
+}
+
+router.get('/whatsapp-accounts/embedded-signup/config', adminOnly, (req, res) => {
+  const appId = (process.env.META_APP_ID || '').trim();
+  const configId = (process.env.META_EMBEDDED_SIGNUP_CONFIG_ID || '').trim();
+  res.json({ enabled: !!(appId && configId && embeddedAppSecret()), appId, configId, apiVersion: metaVersion() });
+});
+
+router.post('/whatsapp-accounts/embedded-signup', adminOnly, async (req, res) => {
+  const { code, wabaId, phoneNumberId, coexistence } = req.body || {};
+  const appId = (process.env.META_APP_ID || '').trim();
+  const appSecret = embeddedAppSecret();
+  if (!appId || !appSecret) {
+    return res.status(500).json({ error: 'Embedded Signup is not configured on the server (META_APP_ID / app secret missing)' });
+  }
+  if (!code) {
+    return res.status(400).json({ error: 'code is required' });
+  }
+  let waba = String(wabaId || '').trim();
+  let phoneId = String(phoneNumberId || '').trim();
+  const v = metaVersion();
+
+  try {
+    // 1. code -> business token. Meta's documented call sends only client_id,
+    //    client_secret and code (no redirect_uri). The codes expire after 30s.
+    //    If that is rejected we retry with an empty and then an origin
+    //    redirect_uri, which only matters on unusual dashboard setups.
+    const origin = req.get('origin') || `https://${req.get('host')}`;
+    let tokenResp = null;
+    let lastErr = null;
+    for (const redirectUri of [null, '', origin]) {
+      const label = redirectUri === null ? 'omitted' : (redirectUri === '' ? 'empty' : 'origin');
+      try {
+        const params = { client_id: appId, client_secret: appSecret, code: String(code) };
+        if (redirectUri !== null) params.redirect_uri = redirectUri;
+        tokenResp = await graphJson(
+          `https://graph.facebook.com/${v}/oauth/access_token?` + new URLSearchParams(params)
+        );
+        console.log(`[embedded-signup] token exchange ok (redirect_uri=${label})`);
+        break;
+      } catch (e) {
+        lastErr = e;
+        console.warn(`[embedded-signup] token exchange failed (redirect_uri=${label}): ${e.message}`);
+      }
+    }
+    if (!tokenResp) throw lastErr;
+    const accessToken = tokenResp.access_token;
+    if (!accessToken) throw new Error('Meta returned no access token');
+    const auth = { Authorization: `Bearer ${accessToken}` };
+
+    // 1b. no WABA from the browser session? Read it from the token's granted
+    //     scopes (Meta's debug_token lists the WABAs this token can manage).
+    if (!waba) {
+      const dbg = await graphJson(
+        `https://graph.facebook.com/${v}/debug_token?` + new URLSearchParams({
+          input_token: accessToken, access_token: `${appId}|${appSecret}`,
+        })
+      );
+      const scopes = dbg?.data?.granular_scopes || [];
+      const ids = scopes
+        .filter(sc => sc.scope === 'whatsapp_business_management')
+        .flatMap(sc => sc.target_ids || []);
+      if (!ids.length) throw new Error('Could not determine the WhatsApp Business Account from the signup token');
+      const { rows: knownW } = await pool.query('SELECT waba_id FROM coexistence.whatsapp_accounts');
+      const knownWabas = new Set(knownW.map(r => r.waba_id));
+      waba = ids.find(id => !knownWabas.has(id)) || ids[0];
+      console.log('[embedded-signup] WABA derived from token:', waba);
+    }
+
+    // 2. subscribe our app to this WABA's webhooks
+    await graphJson(`https://graph.facebook.com/${v}/${encodeURIComponent(waba)}/subscribed_apps`, {
+      method: 'POST', headers: auth,
+    });
+
+    // 2b. coexistence sessions may not include the phone number ID: look it up
+    //     from the WABA (prefer a number we don't already have saved)
+    if (!phoneId) {
+      const list = await graphJson(
+        `https://graph.facebook.com/${v}/${encodeURIComponent(waba)}/phone_numbers?fields=id,display_phone_number`,
+        { headers: auth }
+      );
+      const nums = list.data || [];
+      if (!nums.length) throw new Error('No phone number found on this WhatsApp Business Account yet');
+      const { rows: known } = await pool.query('SELECT phone_number_id FROM coexistence.whatsapp_accounts');
+      const knownIds = new Set(known.map(r => r.phone_number_id));
+      phoneId = (nums.find(n => !knownIds.has(n.id)) || nums[0]).id;
+    }
+
+    // 3. resolve display name / number (also proves the token works)
+    const meta = await fetchPhoneMeta(phoneId, accessToken);
+    const displayName = meta.verified_name || `WhatsApp ${waba}`;
+    const displayPhoneNumber = meta.display_phone_number ? String(meta.display_phone_number).replace(/\D/g, '') : '';
+
+    // 4. save (re-onboarding the same number refreshes its token)
+    const crypto = require('crypto');
+    const verifyToken = crypto.randomBytes(16).toString('hex');
+    const client = await pool.connect();
+    let row;
+    try {
+      await client.query('BEGIN');
+      const { rows: existing } = await client.query(
+        'SELECT id FROM coexistence.whatsapp_accounts WHERE phone_number_id = $1', [phoneId]
+      );
+      if (existing.length) {
+        const r = await client.query(
+          `UPDATE coexistence.whatsapp_accounts
+              SET waba_id=$1, meta_app_id=$2, access_token_encrypted=$3, display_name=$4,
+                  display_phone_number=$5, is_active=TRUE, updated_at=NOW()
+            WHERE id=$6 RETURNING *`,
+          [waba, appId, encrypt(accessToken), displayName, displayPhoneNumber, existing[0].id]
+        );
+        row = r.rows[0];
+      } else {
+        const { rows: cnt } = await client.query('SELECT COUNT(*)::int AS n FROM coexistence.whatsapp_accounts');
+        const r = await client.query(
+          `INSERT INTO coexistence.whatsapp_accounts
+             (display_name, display_phone_number, phone_number_id, waba_id, meta_app_id,
+              access_token_encrypted, verify_token_encrypted, is_default, is_active)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,TRUE) RETURNING *`,
+          [displayName, displayPhoneNumber, phoneId, waba, appId,
+           encrypt(accessToken), encrypt(verifyToken), cnt[0].n === 0]
+        );
+        row = r.rows[0];
+      }
+      await client.query('COMMIT');
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
+
+    // 5. coexistence: request contacts + history sync (best-effort; 24h window)
+    const sync = {};
+    if (coexistence) {
+      for (const syncType of ['smb_app_state_sync', 'history']) {
+        try {
+          await graphJson(`https://graph.facebook.com/${v}/${encodeURIComponent(phoneId)}/smb_app_data`, {
+            method: 'POST',
+            headers: { ...auth, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messaging_product: 'whatsapp', sync_type: syncType }),
+          });
+          sync[syncType] = 'requested';
+        } catch (e) {
+          console.warn(`[embedded-signup] ${syncType} sync request failed:`, e.message);
+          sync[syncType] = `failed: ${e.message}`;
+        }
+      }
+    }
+
+    res.status(201).json({ account: publicShape(row, { includeSecrets: true }), sync });
+  } catch (err) {
+    console.error('[embedded-signup] failed:', err.message);
+    res.status(400).json({ error: `Embedded Signup failed: ${err.message}` });
+  }
+});
+
 router.put('/whatsapp-accounts/:id', adminOnly, async (req, res) => {
   try {
     const { phoneNumberId, wabaId, accessToken, verifyToken, metaAppId, isActive } = req.body || {};

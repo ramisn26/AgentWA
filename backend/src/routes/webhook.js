@@ -209,6 +209,9 @@ function inferPayloadKind(body) {
   const field = change.field;
   if (field === 'message_template_status_update') return 'template_status_update';
   if (field === 'account_update') return 'account_update';
+  if (field === 'history') return 'history';
+  if (field === 'smb_app_state_sync') return 'smb_app_state_sync';
+  if (field === 'smb_message_echoes') return 'message_echoes';
   const value = change.value || {};
   if (Array.isArray(value.message_echoes) && value.message_echoes.length > 0) return 'message_echoes';
   if (Array.isArray(value.messages) && value.messages.length > 0) return 'messages';

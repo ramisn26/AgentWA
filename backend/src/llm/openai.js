@@ -4,6 +4,7 @@
 // finish_reason === 'tool_calls' until the model stops requesting tools.
 
 const OpenAI = require('openai');
+const isReasoningModel = m => /^gpt-5/i.test(m || '');
 
 function toOpenAITools(tools) {
   return tools.map(t => ({
@@ -42,13 +43,25 @@ async function runWithTools({
   while (iterations < maxIterations) {
     iterations += 1;
     const t0 = Date.now();
-    const resp = await client.chat.completions.create({
+    const reasoning = isReasoningModel(model);
+    const params = {
       model,
       messages: history,
       tools: oaiTools.length > 0 ? oaiTools : undefined,
+      // Reasoning models need headroom: thinking tokens share this budget.
+      max_completion_tokens: reasoning ? 4096 : 1024,
+    };
+    if (reasoning) {
+      params.reasoning_effort = process.env.OPENAI_REASONING_EFFORT || 'low';
+    }
+    const resp = await client.chat.completions.create(params);
+    //const resp = await client.chat.completions.create({
+    //  model,
+     // messages: history,
+     // tools: oaiTools.length > 0 ? oaiTools : undefined,
       // max_tokens: 1024,
-      max_completion_tokens: 1024,
-    });
+     // max_completion_tokens: 1024,
+   // });
     const latency = Date.now() - t0;
 
     totalInputTokens += resp.usage?.prompt_tokens || 0;

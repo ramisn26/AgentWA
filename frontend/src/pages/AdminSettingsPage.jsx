@@ -740,6 +740,83 @@ function WhatsappAccountsTab() {
     } catch { /* clipboard blocked */ }
   };
 
+  // ---- Embedded Signup (coexistence: connect an existing WhatsApp Business app) ----
+  const [esConfig, setEsConfig] = useState(null);
+  const [esBusy, setEsBusy] = useState(false);
+  useEffect(() => { api.whatsappAccounts.embeddedSignupConfig().then(setEsConfig).catch(() => setEsConfig({ enabled: false })); }, []);
+
+  const loadFbSdk = (appId, version) => new Promise((resolve, reject) => {
+    if (window.FB) { resolve(); return; }
+    window.fbAsyncInit = () => {
+      window.FB.init({ appId, autoLogAppEvents: true, xfbml: false, version });
+      resolve();
+    };
+    const s = document.createElement('script');
+    s.src = 'https://connect.facebook.net/en_US/sdk.js';
+    s.async = true; s.defer = true; s.crossOrigin = 'anonymous';
+    s.onerror = () => reject(new Error('Could not load the Facebook SDK (blocked by an ad blocker?)'));
+    document.body.appendChild(s);
+  });
+
+  const startEmbeddedSignup = async () => {
+    if (!esConfig?.enabled || esBusy) return;
+    setEsBusy(true);
+    let session = null;
+    const onMessage = (event) => {
+      if (!/^https:\/\/([a-z0-9-]+\.)?facebook\.com$/.test(event.origin)) return;
+      console.log('[embedded-signup] raw message', event.origin, event.data);
+      try {
+        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        if (data?.type !== 'WA_EMBEDDED_SIGNUP') return;
+        console.log('[embedded-signup] session event', data);
+        if (data.event === 'FINISH' || data.event === 'FINISH_ONLY_WABA' || data.event === 'FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING') {
+          session = { ...data.data, event: data.event };
+        } else if (data.event === 'CANCEL') {
+          session = { cancelled: true };
+        }
+      } catch { /* not JSON */ }
+    };
+    window.addEventListener('message', onMessage);
+    try {
+      await loadFbSdk(esConfig.appId, esConfig.apiVersion);
+      const code = await new Promise((resolve, reject) => {
+        window.FB.login((response) => {
+          console.log('[embedded-signup] FB.login response', response);
+          if (response?.authResponse?.code) resolve(response.authResponse.code);
+          else reject(new Error('Meta closed the popup without returning a code. Either the popup was closed before finishing, or the app settings block it (JavaScript SDK domain, config ID or app mode). Open the browser console for details.'));
+        }, {
+          config_id: esConfig.configId,
+          response_type: 'code',
+          override_default_response_type: true,
+          // Coexistence: Meta's Embedded Signup Builder lists "WhatsApp Business App
+          // Onboarding" as the Feature Type (featureType below), session info v3.
+          extras: { setup: {}, featureType: 'whatsapp_business_app_onboarding', sessionInfoVersion: '3' },
+        });
+      });
+      // The session message normally arrives just before/after the FB.login callback.
+      // Give the session message a moment to arrive; if it never does, the
+      // backend works out the WABA / number from the token instead.
+      for (let i = 0; i < 12 && !session; i++) await new Promise(r => setTimeout(r, 250));
+      if (session?.cancelled) throw new Error('You cancelled the signup in the Meta popup.');
+      const phoneNumberId = session?.phone_number_id || '';
+      const wabaId = session?.waba_id || '';
+      const result = await api.whatsappAccounts.embeddedSignup({
+        code, wabaId, phoneNumberId,
+        coexistence: true,
+      });
+      const failed = Object.entries(result.sync || {}).filter(([, v]) => v !== 'requested');
+      alert(failed.length
+        ? 'Number connected, but the history/contact sync request failed. Check the server logs; it must be retried within 24 hours.'
+        : 'Number connected. Contacts and chat history will sync in the background.');
+      await refresh();
+    } catch (err) {
+      alert(err.message || 'Embedded Signup failed');
+    } finally {
+      window.removeEventListener('message', onMessage);
+      setEsBusy(false);
+    }
+  };
+
   const refresh = async () => {
     setLoading(true);
     try {
@@ -832,6 +909,16 @@ function WhatsappAccountsTab() {
             Connect one or more WhatsApp numbers. Each number can have its own AI agent and is used to send templates, broadcasts and automation messages.
           </p>
         </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {esConfig?.enabled && (
+            <button onClick={startEmbeddedSignup} disabled={esBusy} title="Connect a number that is already on the WhatsApp Business app (coexistence)" style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '8px 14px', background: '#25D366', color: '#fff', border: 'none',
+              borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: esBusy ? 'default' : 'pointer', fontFamily: FONT, opacity: esBusy ? 0.7 : 1,
+            }}>
+              {esBusy ? <Loader2 size={15} /> : <MessageSquare size={15} />} Connect via WhatsApp Business app
+            </button>
+          )}
         <button onClick={startCreate} style={{
           display: 'flex', alignItems: 'center', gap: 6,
           padding: '8px 14px', background: C.primary, color: '#fff', border: 'none',
@@ -839,6 +926,7 @@ function WhatsappAccountsTab() {
         }}>
           <Plus size={15} /> {accounts.length === 0 ? 'Connect account' : 'Add number'}
         </button>
+        </div>
       </div>
 
       {loading ? (

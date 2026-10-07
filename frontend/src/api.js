@@ -159,6 +159,8 @@ export const api = {
     create: (data) => req('/whatsapp-accounts', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => req(`/whatsapp-accounts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => req(`/whatsapp-accounts/${id}`, { method: 'DELETE' }),
+    embeddedSignupConfig: () => req('/whatsapp-accounts/embedded-signup/config'),
+    embeddedSignup: (data) => req('/whatsapp-accounts/embedded-signup', { method: 'POST', body: JSON.stringify(data) }),
   },
   // Google integrations (v1: Google Sheets only; Gmail + Calendar in a later
   // release reuse the same /google-integrations table and OAuth flow).
