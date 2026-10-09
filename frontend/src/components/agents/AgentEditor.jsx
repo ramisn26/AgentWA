@@ -22,6 +22,7 @@ const BLANK = {
   contextWindowMessages: 20,
   maxToolIterations: 6,
   transcribeAudio: false,
+  acceptImages: false,
   triggerMode: 'any',
   triggerKeyword: '',
   triggerMatchType: 'contains',
@@ -64,6 +65,7 @@ export default function AgentEditor({ agentId, waAccounts, user, navigate, onDon
           contextWindowMessages: a.contextWindowMessages || 20,
           maxToolIterations: a.maxToolIterations || 6,
           transcribeAudio: !!a.transcribeAudio,
+          acceptImages: !!a.acceptImages,
           triggerMode: a.triggerMode || 'any',
           triggerKeyword: a.triggerKeyword || '',
           triggerMatchType: a.triggerMatchType || 'contains',
@@ -126,6 +128,7 @@ export default function AgentEditor({ agentId, waAccounts, user, navigate, onDon
       contextWindowMessages: form.contextWindowMessages,
       maxToolIterations: form.maxToolIterations,
       transcribeAudio: form.transcribeAudio,
+      acceptImages: form.acceptImages,
       triggerMode: form.triggerMode,
       triggerKeyword: form.triggerKeyword,
       triggerMatchType: form.triggerMatchType,
@@ -335,6 +338,23 @@ export default function AgentEditor({ agentId, waAccounts, user, navigate, onDon
                   </div>
                   <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>
                     Needs an OpenAI key connected in Integrations → AI Models.
+                  </div>
+                </div>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', marginTop: 14 }}>
+                <input
+                  type="checkbox"
+                  checked={!!form.acceptImages}
+                  onChange={e => setForm(f => ({ ...f, acceptImages: e.target.checked }))}
+                  style={{ width: 16, height: 16, marginTop: 2, cursor: 'pointer' }}
+                />
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', fontSize: 13, fontWeight: 600, color: C.text }}>
+                    Understand images
+                    <InfoDot text="When on, photos customers send (e.g. a handwritten order list) are passed to the AI model so it can read them. The selected model must support vision (e.g. GPT-4o, Claude)." />
+                  </div>
+                  <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>
+                    Needs a vision-capable model (e.g. GPT-4o or Claude).
                   </div>
                 </div>
               </label>

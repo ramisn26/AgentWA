@@ -6,6 +6,14 @@
 
 const Anthropic = require('@anthropic-ai/sdk');
 
+// Generic parts -> Anthropic content blocks.
+function toAnthropicContent(content) {
+  if (!Array.isArray(content)) return [{ type: 'text', text: content }];
+  return content.map(p => p.type === 'image'
+    ? { type: 'image', source: { type: 'base64', media_type: p.mediaType, data: p.data } }
+    : { type: 'text', text: p.text });
+}
+
 async function runWithTools({
   systemPrompt,
   messages,        // [{ role:'user'|'assistant', content:string }]
@@ -17,11 +25,12 @@ async function runWithTools({
   maxIterations,
 }) {
   const client = new Anthropic({ apiKey });
+  const hasImages = messages.some(m => Array.isArray(m.content));
 
   // Translate our generic messages to Anthropic's format. v1: text only.
   const history = messages.map(m => ({
     role: m.role,
-    content: [{ type: 'text', text: m.content }],
+    content: toAnthropicContent(m.content),
   }));
 
   let totalInputTokens = 0;
@@ -34,7 +43,7 @@ async function runWithTools({
     const t0 = Date.now();
     const resp = await client.messages.create({
       model,
-      max_tokens: 1024,
+      max_tokens: hasImages ? 2048 : 1024,
       system: systemPrompt,
       tools: tools.length > 0 ? tools : undefined,
       messages: history,

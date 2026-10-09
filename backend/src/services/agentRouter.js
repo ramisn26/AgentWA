@@ -49,12 +49,13 @@ async function routeIfActive(record) {
   // is actually honoured and the worker transcribes the audio instead of
   // running the agent on the literal placeholder string.
   const hasText = !isAudio && !!(record.message_body && record.message_body.trim());
-  if (!hasText && !isAudio) return null; // only text or voice notes are actionable
+  const isImage = record.message_type === 'image' && !!record.media_url;
+  if (!hasText && !isAudio && !isImage) return null; // text, voice notes or photos are actionable
 
   const { rows } = await pool.query(
     `SELECT a.id, a.wa_account_id, a.trigger_mode, a.trigger_keyword,
             a.trigger_match_type, a.trigger_case_sensitive, a.trigger_session_minutes,
-            a.transcribe_audio
+            a.transcribe_audio, a.accept_images
        FROM coexistence.agents a
        JOIN coexistence.whatsapp_accounts w ON w.id = a.wa_account_id
       WHERE a.is_active = TRUE
@@ -70,6 +71,8 @@ async function routeIfActive(record) {
   // A voice note only runs when the agent has transcription enabled (the worker
   // turns it into text via Whisper). Otherwise the agent stays text-only.
   if (isAudio && !hasText && !agent.transcribe_audio) return null;
+  // A photo without a caption only runs when the agent has image input on.
+  if (isImage && !hasText && !agent.accept_images) return null;
 
   // Trigger gating. 'any' = run on every inbound. 'keyword' = engage on a
   // keyword match OR an active session. A voice note can't be keyword-matched

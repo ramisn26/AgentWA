@@ -515,6 +515,15 @@ async function runAgent({ agentId, contactNumber, inboundMessageId, inboundText 
     }
   }
 
+  // Photos: a customer often sends several images back-to-back. Let the newest
+  // run handle the whole burst so we send ONE reply / ONE cart.
+  if (agent.accept_images && inboundMessageId) {
+    const { isSupersededImageRun } = require('../services/imageInput');
+    if (await isSupersededImageRun({ pool, inboundMessageId })) {
+      return { skipped: true, reason: 'superseded_by_newer_message' };
+    }
+  }
+
   // Open the run row immediately so a crash mid-loop is still visible in the UI.
   const { rows: runRows } = await pool.query(
     `INSERT INTO coexistence.agent_runs
@@ -548,9 +557,23 @@ async function runAgent({ agentId, contactNumber, inboundMessageId, inboundText 
       currentInboundText: messageText,
     });
 
-    const provider = getProvider(agent.ai_provider);
+    // Image input: attach the customer's photo(s) to the last user turn.
+    let imageTurn = null;
+    if (agent.accept_images) {
+      const { attachInboundImages } = require('../services/imageInput');
+      imageTurn = await attachInboundImages({
+        pool, getAccountWithToken, agent, contactNumber, inboundMessageId, runId, history, messageText,
+      });
+    }
+    const { withImageFallback } = require('../services/imageInput');
+    // Order IDs: swap {{ORDER_ID:CRC}} for the next number of the series (atomic).
+    require('../services/orderId').installOrderIdSubstitution(executors, { pool, agent });
+    const provider = withImageFallback(getProvider(agent.ai_provider), imageTurn);
     const result = await provider.runWithTools({
-      systemPrompt: withContactContext(agent.system_prompt, contactNumber),
+      systemPrompt: await require('../services/contactContext').addProfileName(
+        withContactContext(agent.system_prompt, contactNumber),
+        { pool, agent, contactNumber, getAccountWithToken },
+      ),
       messages: history,
       tools,
       onToolCall: async ({ name, args }) => {

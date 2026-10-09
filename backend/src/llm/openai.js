@@ -4,6 +4,9 @@
 // finish_reason === 'tool_calls' until the model stops requesting tools.
 
 const OpenAI = require('openai');
+
+// gpt-5.x models are reasoning models: they accept reasoning_effort, and their
+// hidden reasoning tokens count against max_completion_tokens. gpt-4o doesn't.
 const isReasoningModel = m => /^gpt-5/i.test(m || '');
 
 function toOpenAITools(tools) {
@@ -15,6 +18,14 @@ function toOpenAITools(tools) {
       parameters: t.input_schema || { type: 'object', properties: {} },
     },
   }));
+}
+
+// Generic parts -> OpenAI chat parts. Strings pass through untouched.
+function toOpenAIContent(content) {
+  if (!Array.isArray(content)) return content;
+  return content.map(p => p.type === 'image'
+    ? { type: 'image_url', image_url: { url: `data:${p.mediaType};base64,${p.data}`, detail: 'high' } }
+    : { type: 'text', text: p.text });
 }
 
 async function runWithTools({
@@ -29,10 +40,11 @@ async function runWithTools({
 }) {
   const client = new OpenAI({ apiKey });
   const oaiTools = toOpenAITools(tools);
+  const hasImages = messages.some(m => Array.isArray(m.content));
 
   const history = [
     { role: 'system', content: systemPrompt },
-    ...messages.map(m => ({ role: m.role, content: m.content })),
+    ...messages.map(m => ({ role: m.role, content: toOpenAIContent(m.content) })),
   ];
 
   let totalInputTokens = 0;
@@ -44,24 +56,21 @@ async function runWithTools({
     iterations += 1;
     const t0 = Date.now();
     const reasoning = isReasoningModel(model);
+    const hasTools = oaiTools.length > 0;
+    // /v1/chat/completions rejects function tools combined with reasoning, so
+    // use 'none' whenever tools are attached. OPENAI_REASONING_EFFORT only
+    // applies to tool-less calls.
+    const effort = hasTools ? 'none' : (process.env.OPENAI_REASONING_EFFORT || 'low');
     const params = {
       model,
       messages: history,
-      tools: oaiTools.length > 0 ? oaiTools : undefined,
-      // Reasoning models need headroom: thinking tokens share this budget.
-      max_completion_tokens: reasoning ? 4096 : 1024,
+      tools: hasTools ? oaiTools : undefined,
+      // With effort 'none' there are no hidden reasoning tokens, so the original
+      // budget is enough. Keep headroom only when reasoning is on.
+      max_completion_tokens: reasoning && effort !== 'none' ? 4096 : (hasImages ? 2048 : 1024),
     };
-    if (reasoning) {
-      params.reasoning_effort = process.env.OPENAI_REASONING_EFFORT || 'low';
-    }
+    if (reasoning) params.reasoning_effort = effort;
     const resp = await client.chat.completions.create(params);
-    //const resp = await client.chat.completions.create({
-    //  model,
-     // messages: history,
-     // tools: oaiTools.length > 0 ? oaiTools : undefined,
-      // max_tokens: 1024,
-     // max_completion_tokens: 1024,
-   // });
     const latency = Date.now() - t0;
 
     totalInputTokens += resp.usage?.prompt_tokens || 0;

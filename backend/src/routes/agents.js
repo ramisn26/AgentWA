@@ -36,6 +36,7 @@ function agentShape(row) {
     contextWindowMessages: row.context_window_messages,
     maxToolIterations: row.max_tool_iterations,
     transcribeAudio: !!row.transcribe_audio,
+    acceptImages: !!row.accept_images,
     triggerMode: row.trigger_mode || 'any',
     triggerKeyword: row.trigger_keyword || '',
     triggerMatchType: row.trigger_match_type || 'contains',
@@ -213,8 +214,8 @@ router.post('/agents', adminOnly, async (req, res) => {
           context_window_messages, max_tool_iterations,
           trigger_mode, trigger_keyword, trigger_match_type,
           trigger_case_sensitive, trigger_session_minutes, media_groups,
-          transcribe_audio)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+          transcribe_audio, accept_images)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
        RETURNING id`,
       [
         b.name.trim(), b.description?.trim() || null,
@@ -227,6 +228,7 @@ router.post('/agents', adminOnly, async (req, res) => {
         Math.max(1, Math.min(1440, parseInt(b.triggerSessionMinutes || 30, 10))),
         JSON.stringify(mediaGroups),
         !!b.transcribeAudio,
+        !!b.acceptImages,
       ],
     );
     res.status(201).json(await fetchAgent(rows[0].id));
@@ -295,6 +297,7 @@ router.put('/agents/:id', adminOnly, async (req, res) => {
       push('context_window_messages', Math.max(1, Math.min(100, parseInt(b.contextWindowMessages, 10) || 20)));
     }
     if (b.transcribeAudio !== undefined) push('transcribe_audio', !!b.transcribeAudio);
+    if (b.acceptImages !== undefined) push('accept_images', !!b.acceptImages);
     if (b.maxToolIterations !== undefined) {
       push('max_tool_iterations', Math.max(1, Math.min(20, parseInt(b.maxToolIterations, 10) || 6)));
     }
