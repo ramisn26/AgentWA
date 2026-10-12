@@ -24,12 +24,12 @@ const C = {
   greenBg: '#E1F5EE',
   greenBright: '#1D9E75',
   red: '#A32D2D',
-  redBg: '#FCEBEB',
+  redBg: 'var(--c-primaryLight)',
   orange: '#E65100',
   orangeBg: '#FFF3E0',
   blue: '#1565C0',
   blueBg: '#E3F2FD',
-  purple: '#534AB7',
+  purple: 'var(--c-purple)',
   purpleBg: '#EEEDFE',
 };
 

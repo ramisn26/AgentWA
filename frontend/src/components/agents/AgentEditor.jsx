@@ -223,7 +223,7 @@ export default function AgentEditor({ agentId, waAccounts, user, navigate, onDon
     <div style={{ padding: '24px 24px 80px', width: '100%', boxSizing: 'border-box', fontFamily: FONT }}>
       {error && (
         <div style={{ padding: '10px 14px', borderRadius: 8, marginBottom: 16,
-          background: '#FCEBEB', color: '#A32D2D', border: '1px solid #FBC8C8', fontSize: 13 }}>
+          background: 'var(--c-primaryLight)', color: '#A32D2D', border: '1px solid #FBC8C8', fontSize: 13 }}>
           {error}
         </div>
       )}

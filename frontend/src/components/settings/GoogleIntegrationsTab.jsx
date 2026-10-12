@@ -125,7 +125,7 @@ export default function GoogleIntegrationsTab() {
           <div style={{
             display: 'flex', alignItems: 'center', gap: 10,
             padding: '10px 14px', borderRadius: 8, marginBottom: 16,
-            background: banner.kind === 'ok' ? '#ECFDF5' : '#FCEBEB',
+            background: banner.kind === 'ok' ? '#ECFDF5' : 'var(--c-primaryLight)',
             color: banner.kind === 'ok' ? '#065F46' : '#A32D2D',
             border: `1px solid ${banner.kind === 'ok' ? '#A7F3D0' : '#FBC8C8'}`,
             fontSize: 13, fontFamily: FONT, fontWeight: 500,
@@ -138,7 +138,7 @@ export default function GoogleIntegrationsTab() {
         {error && (
           <div style={{
             padding: '10px 14px', borderRadius: 8, marginBottom: 16,
-            background: '#FCEBEB', color: '#A32D2D',
+            background: 'var(--c-primaryLight)', color: '#A32D2D',
             border: '1px solid #FBC8C8', fontSize: 13, fontFamily: FONT,
           }}>
             {error}
@@ -328,7 +328,7 @@ function CredentialsCard({ creds, onSaved }) {
       {err && (
         <div style={{
           padding: '8px 12px', borderRadius: 8, margin: '0 0 12px',
-          background: '#FCEBEB', color: '#A32D2D', border: '1px solid #FBC8C8', fontSize: 12,
+          background: 'var(--c-primaryLight)', color: '#A32D2D', border: '1px solid #FBC8C8', fontSize: 12,
         }}>
           {err}
         </div>

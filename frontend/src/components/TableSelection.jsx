@@ -133,7 +133,7 @@ export function BulkDeleteButton({ sel, label, onConfirm, confirmMessage, style 
           ...style,
         }}
         onMouseEnter={(e) => { e.currentTarget.style.background = '#A32D2D'; e.currentTarget.style.color = '#fff'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.background = '#FCEBEB'; e.currentTarget.style.color = '#A32D2D'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--c-primaryLight)'; e.currentTarget.style.color = '#A32D2D'; }}
       >
         <Trash2 size={14} />
         Delete {n} selected

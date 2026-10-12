@@ -251,8 +251,8 @@ function TagDonut({ data }) {
             <title>{`${s.name}: ${fmt(s.count)} (${Math.round((s.count / total) * 100)}%)`}</title>
           </path>
         ))}
-        <text x={cx} y={cy - 4} textAnchor="middle" fontSize="22" fontWeight="600" fill={C.text} fontFamily="DM Mono">{fmt(total)}</text>
-        <text x={cx} y={cy + 14} textAnchor="middle" fontSize="10" fill={C.textMuted} fontFamily="DM Sans">tagged</text>
+        <text x={cx} y={cy - 4} textAnchor="middle" fontSize="22" fontWeight="600" fill={C.text} fontFamily="JetBrains Mono">{fmt(total)}</text>
+        <text x={cx} y={cy + 14} textAnchor="middle" fontSize="10" fill={C.textMuted} fontFamily="Manrope">tagged</text>
       </svg>
       <div style={{ flex: 1, minWidth: 140, display: 'flex', flexDirection: 'column', gap: 7 }}>
         {data.map((d, i) => (

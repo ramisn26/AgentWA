@@ -27,128 +27,101 @@ export default function Sidebar({ activePage, onPageChange, onNavigate, collapse
     ? NAV_ITEMS
     : NAV_ITEMS.filter(item => user.pages.includes(item.pageKey || item.id));
   return (
-    <div style={{
-      width: collapsed ? 68 : 224,
-      minHeight: '100%',
-      background: C.sidebarBg,
-      borderRight: `1px solid ${C.sidebarBorder}`,
-      display: 'flex',
-      flexDirection: 'column',
-      flexShrink: 0,
-      transition: 'width .25s ease',
-      overflow: 'hidden',
-      position: 'relative',
-    }}>
-      {/* Nav items */}
-      <div style={{ padding: collapsed ? '10px 8px' : '14px 10px', flex: 1 }}>
+    <nav
+      className="pr-shell-scroll"
+      aria-label="Main"
+      style={{
+        width: collapsed ? 72 : 232,
+        minHeight: '100%',
+        background: C.navy,
+        display: 'flex',
+        flexDirection: 'column',
+        flexShrink: 0,
+        transition: 'width .25s ease',
+        overflowX: 'hidden',
+        overflowY: 'auto',
+      }}
+    >
+      <div style={{ padding: collapsed ? '14px 10px' : '14px 12px', flex: 1 }}>
+        {!collapsed && (
+          <div style={{
+            padding: '4px 12px 10px', fontSize: 11, fontWeight: 600, color: C.onNavyMuted,
+            fontFamily: FONT, letterSpacing: '.02em',
+          }}>
+            Workspace
+          </div>
+        )}
         {visibleItems.map(item => {
-          const active = activePage === item.id;
+          const active = activePage === item.id
+            || (item.to && activePage === item.to[0] && item.id === 'whatsapp-numbers');
           return (
-            <div
+            <button
               key={item.id}
+              type="button"
               onClick={() => (item.to && onNavigate ? onNavigate(...item.to) : onPageChange(item.id))}
-              title={collapsed ? item.label : ''}
+              title={collapsed ? item.label : undefined}
+              aria-current={active ? 'page' : undefined}
               style={{
+                position: 'relative',
+                width: '100%',
                 display: 'flex',
                 alignItems: 'center',
-                gap: collapsed ? 0 : 11,
+                gap: collapsed ? 0 : 12,
                 padding: collapsed ? '11px 0' : '10px 12px',
                 borderRadius: 10,
+                border: 'none',
                 cursor: 'pointer',
-                transition: 'all .15s',
-                marginBottom: 2,
-                background: active ? C.primary : 'transparent',
-                color: active ? '#fff' : '#111',
+                transition: 'background .15s, color .15s',
+                marginBottom: 3,
+                background: active ? C.navyRaised : 'transparent',
+                color: active ? '#fff' : C.onNavyMuted,
                 justifyContent: collapsed ? 'center' : 'flex-start',
                 fontFamily: FONT,
-                fontSize: 13,
+                fontSize: 13.5,
                 fontWeight: active ? 700 : 500,
                 whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                userSelect: 'none',
+                textAlign: 'left',
               }}
-              onMouseEnter={e => {
-                if (!active) {
-                  e.currentTarget.style.background = '#EFEEE6';
-                  e.currentTarget.style.color = '#111';
-                }
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background = active ? C.primary : 'transparent';
-                e.currentTarget.style.color = active ? '#fff' : '#111';
-              }}
+              onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'rgba(140,180,230,.08)'; e.currentTarget.style.color = C.onNavy; } }}
+              onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.onNavyMuted; } }}
             >
+              {/* Brand-gradient rail marks the current page */}
+              {active && (
+                <span aria-hidden style={{
+                  position: 'absolute', left: 0, top: 8, bottom: 8, width: 3,
+                  borderRadius: 3, background: C.brandGradient,
+                }} />
+              )}
               <span style={{
-                width: 20,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-                opacity: active ? 1 : 0.75,
+                width: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                color: active ? C.brandCyan : 'inherit',
               }}>
-                <item.Icon size={16} />
+                <item.Icon size={17} strokeWidth={active ? 2.3 : 2} />
               </span>
-              {!collapsed && <span style={{ letterSpacing: '-.01em' }}>{item.label}</span>}
-            </div>
+              {!collapsed && <span>{item.label}</span>}
+            </button>
           );
         })}
       </div>
 
-      {/* Collapse button + watermark */}
-      <div style={{ borderTop: `1px solid #F0F0EA` }}>
-        <div
-          onClick={() => setCollapsed(p => !p)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: collapsed ? '12px 0' : '11px 14px',
-            cursor: 'pointer',
-            justifyContent: collapsed ? 'center' : 'flex-start',
-            transition: 'background .15s',
-          }}
-          onMouseEnter={e => e.currentTarget.style.background = '#EFEEE6'}
-          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          <span style={{ display: 'flex', alignItems: 'center', color: '#888', lineHeight: 1 }}>
-            {collapsed ? <ChevronRight size={22} strokeWidth={2.5} /> : <ChevronLeft size={22} strokeWidth={2.5} />}
-          </span>
-          {!collapsed && (
-            <span style={{ fontSize: 15, fontWeight: 600, color: '#888', fontFamily: FONT, lineHeight: 1 }}>
-              Collapse
-            </span>
-          )}
-        </div>
-        {!collapsed && (
-          <div style={{ padding: '0 14px 10px' }}>
-            <span style={{
-              fontSize: 9,
-              fontWeight: 600,
-              color: '#ccc',
-              fontFamily: FONT,
-              letterSpacing: '.06em',
-              textTransform: 'uppercase',
-            }}>
-              Powered by FMOS
-            </span>
-          </div>
-        )}
-        {collapsed && (
-          <div style={{ padding: '0 0 8px', textAlign: 'center' }}>
-            <span style={{
-              fontSize: 7,
-              fontWeight: 600,
-              color: '#ddd',
-              fontFamily: FONT,
-              letterSpacing: '.04em',
-              textTransform: 'uppercase',
-            }}>
-              FMOS
-            </span>
-          </div>
-        )}
-      </div>
-    </div>
+      <button
+        type="button"
+        onClick={() => setCollapsed(p => !p)}
+        title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          justifyContent: collapsed ? 'center' : 'flex-start',
+          padding: collapsed ? '14px 0' : '14px 22px',
+          border: 'none', borderTop: `1px solid ${C.navyLine}`,
+          background: 'transparent', color: C.onNavyMuted, cursor: 'pointer',
+          fontFamily: FONT, fontSize: 13, fontWeight: 600,
+        }}
+        onMouseEnter={e => { e.currentTarget.style.color = C.onNavy; }}
+        onMouseLeave={e => { e.currentTarget.style.color = C.onNavyMuted; }}
+      >
+        {collapsed ? <ChevronRight size={18} strokeWidth={2.4} /> : <ChevronLeft size={18} strokeWidth={2.4} />}
+        {!collapsed && 'Collapse'}
+      </button>
+    </nav>
   );
 }

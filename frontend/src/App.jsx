@@ -17,6 +17,8 @@ import MediaLibraryPage from './pages/MediaLibraryPage.jsx';
 import AboutUsPage from './pages/AboutUsPage.jsx';
 import PipelinesPage from './pages/PipelinesPage.jsx';
 import AiAgentBuilderPage from './pages/AiAgentBuilderPage.jsx';
+import AppFooter from './components/AppFooter.jsx';
+import CustomerHomePage from './pages/CustomerHomePage.jsx';
 
 const VALID_PAGES = new Set([
   'home', 'chatbot-builder', 'template-builder', 'chats',
@@ -115,7 +117,9 @@ export default function App() {
   const renderPage = () => {
     if (!pageAllowed) return null;
     switch (page) {
-      case 'home': return <HomePage user={user} onPageChange={setPage} />;
+      case 'home': return user.role === 'customer'
+        ? <CustomerHomePage user={user} onNavigate={setPage} />
+        : <HomePage user={user} onPageChange={setPage} />;
       case 'chats': return <ChatsPage subParts={subParts} navigate={navigate} user={user} />;
       case 'contacts': return <ContactsPage user={user} onNavigate={navigate} />;
       case 'pipelines': return <PipelinesPage user={user} />;
@@ -130,13 +134,15 @@ export default function App() {
     }
   };
 
+  // Layout: one continuous navy shell (topbar + sidebar + footer, like
+  // pavirami.in) framing a light, rounded workspace canvas.
   return (
     <div style={{
       display: 'flex',
       flexDirection: 'column',
       height: '100vh',
       fontFamily: FONT,
-      background: C.pageBg,
+      background: C.navy,
     }}>
       <Topbar user={user} onLogout={handleLogout} onNavigate={setPage} />
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
@@ -150,10 +156,16 @@ export default function App() {
             user={user}
           />
         )}
-        <div style={{ flex: 1, overflow: 'auto', background: C.pageBg, display: 'flex', flexDirection: 'column' }}>
+        <main style={{
+          flex: 1, minWidth: 0, overflow: 'auto', display: 'flex', flexDirection: 'column',
+          background: C.pageBg,
+          borderRadius: page !== 'admin-settings' ? '16px 0 0 16px' : '0',
+          boxShadow: 'inset 0 0 0 1px rgba(7,27,53,.04)',
+        }}>
           {renderPage()}
-        </div>
+        </main>
       </div>
+      <AppFooter />
     </div>
   );
 }

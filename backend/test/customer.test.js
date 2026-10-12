@@ -34,11 +34,11 @@ function gate(method, path, user = customer) {
   return { passed, res };
 }
 
-test('customer sees only Chats and Bulk Message pages', () => {
+test('customer sees only Home (welcome), Chats and Bulk Message pages', () => {
   assert.equal(isCustomer(customer), true);
-  assert.deepEqual([...effectivePages(customer)].sort(), ['bulk-message', 'chats']);
+  assert.deepEqual([...effectivePages(customer)].sort(), ['bulk-message', 'chats', 'home']);
   assert.equal(hasPermission(customer, 'bulk-message'), true);
-  for (const p of ['home', 'contacts', 'template-builder', 'chatbot-builder', 'pipelines',
+  for (const p of ['contacts', 'template-builder', 'chatbot-builder', 'pipelines',
     'media-library', 'admin-settings:users', 'admin-settings:whatsapp-accounts']) {
     assert.equal(hasPermission(customer, p), false, p);
   }

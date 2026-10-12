@@ -26,10 +26,12 @@ const ROLE_PAGE_DEFAULTS = {
     'home', 'chats', 'contacts', 'pipelines', 'about',
     'admin-settings:general',     // only the General tab in user settings
   ],
-  // customer: an onboarded client business. Sees ONLY Chats + Bulk Message,
-  // scoped to the WhatsApp number(s) assigned to them (user_wa_assignments).
-  // API access is deny-by-default — see middleware/customerGate.js.
-  customer: ['chats', 'bulk-message'],
+  // customer: an onboarded client business. Sees a welcome Home page plus
+  // Chats + Bulk Message, scoped to the WhatsApp number(s) assigned to them
+  // (user_wa_assignments). Their Home is a static welcome page — the admin
+  // dashboard API stays blocked. API access is deny-by-default — see
+  // middleware/customerGate.js.
+  customer: ['home', 'chats', 'bulk-message'],
   viewer: ['home', 'about'],      // legacy fallback
 };
 

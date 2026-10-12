@@ -1,7 +1,7 @@
 # Customer onboarding (limited access: Chats + Broadcast)
 
-A **Customer** is an outside business you onboard onto AgentWA. They log in and see
-only **Chats** and **Bulk Message**, limited to their own WhatsApp number(s).
+A **Customer** is an outside business you onboard onto AgentWA. They log in to a welcome
+**Home** page about PaviRami AI Zen, plus **Chats** and **Bulk Message**, limited to their own WhatsApp number(s).
 
 ## Onboard a customer
 1. Connect their number in **Settings → WhatsApp Accounts** (if not already).

@@ -51,7 +51,7 @@ export default function AgentToolsList({ agentId, tools, onChange }) {
     <div style={{ fontFamily: FONT }}>
       {error && (
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '8px 12px', borderRadius: 8,
-          background: '#FCEBEB', color: '#A32D2D', border: '1px solid #FBC8C8', fontSize: 12, marginBottom: 12 }}>
+          background: 'var(--c-primaryLight)', color: '#A32D2D', border: '1px solid #FBC8C8', fontSize: 12, marginBottom: 12 }}>
           <AlertCircle size={13} /> {error}
         </div>
       )}

@@ -181,7 +181,7 @@ function KpiCards({ metrics }) {
   const { totalRecipients, totalSent, totalDelivered, totalRead } = metrics;
 
   const cards = [
-    { key: 'recipients', label: 'Recipients', value: totalRecipients, color: '#dc2626', bg: '#FCEBEB', icon: Users },
+    { key: 'recipients', label: 'Recipients', value: totalRecipients, color: 'var(--c-primary)', bg: 'var(--c-primaryLight)', icon: Users },
     { key: 'sent', label: 'Sent', value: totalSent, color: '#2563eb', bg: '#E3F2FD', icon: Send },
     { key: 'delivered', label: 'Received', value: totalDelivered, color: '#0F6E56', bg: '#E1F5EE', icon: CheckCircle },
     { key: 'read', label: 'Read', value: totalRead, color: '#7c3aed', bg: '#EDE9FE', icon: Eye },
@@ -1046,7 +1046,7 @@ export default function BulkMessagePage({ onNavigate, user }) {
                               const isCustom = customVarMode[v] || (curVal !== '' && !fieldVals.has(curVal));
                               return (
                                 <div key={v} style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                                  <span style={{ fontSize: 12, fontWeight: 600, color: C.text, fontFamily: "'DM Mono', monospace", background: 'var(--c-surfaceAlt)', padding: '4px 8px', borderRadius: 4, whiteSpace: 'nowrap' }}>{'{{' + v + '}}'}</span>
+                                  <span style={{ fontSize: 12, fontWeight: 600, color: C.text, fontFamily: "'JetBrains Mono', monospace", background: 'var(--c-surfaceAlt)', padding: '4px 8px', borderRadius: 4, whiteSpace: 'nowrap' }}>{'{{' + v + '}}'}</span>
                                   <span style={{ fontSize: 12, color: C.textMuted }}>→</span>
                                   <div style={{ flex: 1, minWidth: 160 }}>
                                     <SearchableSelect

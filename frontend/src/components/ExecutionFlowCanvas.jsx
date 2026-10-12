@@ -4,9 +4,9 @@ import { FONT } from '../constants.js';
 
 /* ── Design Tokens ──────────────────────────────────────────────────────────── */
 const C = {
-  pageBg: '#F7F7F3',
-  dot: '#E5E5E0',
-  nodeBorder: '#E5E5E0',
+  pageBg: 'var(--c-surfaceAlt)',
+  dot: 'var(--c-border)',
+  nodeBorder: 'var(--c-border)',
   nodeBorderExecuted: '#0F6E56',
   nodeBorderError: '#A32D2D',
   nodeBg: '#FFFFFF',
@@ -22,12 +22,12 @@ const C = {
   green: '#0F6E56',
   greenBg: '#E1F5EE',
   red: '#A32D2D',
-  redBg: '#FCEBEB',
+  redBg: 'var(--c-primaryLight)',
   blue: '#1565C0',
   blueBg: '#E3F2FD',
   orange: '#E65100',
   orangeBg: '#FFF3E0',
-  purple: '#534AB7',
+  purple: 'var(--c-purple)',
   purpleBg: '#EEEDFE',
 };
 
@@ -41,7 +41,7 @@ const nodeH = (n) => {
 };
 
 const NT = {
-  trigger:  { bg:'#FCEBEB', border:'#E8A0A0', color:'#A32D2D', accent:'#791F1F', label:'TRIGGER' },
+  trigger:  { bg:'var(--c-primaryLight)', border:'#E8A0A0', color:'#A32D2D', accent:'#791F1F', label:'TRIGGER' },
   message:  { bg:'#FDF2F2', border:'#E8B0B0', color:'#B53D3D', accent:'#A32D2D', label:'MESSAGE' },
   condition:{ bg:'#FFF5F5', border:'#F0C0C0', color:'#C44A4A', accent:'#A32D2D', label:'CONDITION' },
   action:   { bg:'#FAF0F0', border:'#D8B0B0', color:'#8B3A3A', accent:'#A32D2D', label:'ACTION' },
@@ -88,7 +88,7 @@ function ExecutionNode({ node, step, isSelected, onClick }) {
 
   const borderColor = hasError ? C.nodeBorderError : executed ? C.nodeBorderExecuted : C.nodeBorder;
   const bgOpacity = executed ? 1 : 0.55;
-  const topStripColor = hasError ? C.red : executed ? C.green : '#E5E5E0';
+  const topStripColor = hasError ? C.red : executed ? C.green : 'var(--c-border)';
 
   return (
     <div
@@ -377,7 +377,7 @@ export default function ExecutionFlowCanvas({ nodes, edges, steps, onNodeClick, 
 
 const iconBtnStyle = {
   width: 28, height: 28, borderRadius: 6,
-  border: '1px solid #E5E5E0', background: '#fff',
+  border: '1px solid var(--c-border)', background: '#fff',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
   cursor: 'pointer', color: C.text4,
 };

@@ -197,7 +197,7 @@ export default function AgentLivePreview({ agentId, headerTitle, canTest = true 
         )}
 
         {error && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '8px auto 0', maxWidth: '92%', padding: '6px 9px', borderRadius: 8, background: '#FCEBEB', color: '#A32D2D', fontSize: 10, lineHeight: 1.4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '8px auto 0', maxWidth: '92%', padding: '6px 9px', borderRadius: 8, background: 'var(--c-primaryLight)', color: '#A32D2D', fontSize: 10, lineHeight: 1.4 }}>
             <AlertCircle size={12} style={{ flexShrink: 0 }} />
             <span style={{ wordBreak: 'break-word' }}>{error}</span>
           </div>

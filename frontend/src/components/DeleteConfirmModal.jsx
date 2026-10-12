@@ -29,7 +29,7 @@ export default function DeleteConfirmModal({
             width: 36, height: 36, borderRadius: '50%',
             background: danger ? '#fef2f2' : '#f0f2f5',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: danger ? C.primary : C.textSecondary,
+            color: danger ? C.danger : C.textSecondary,
             flexShrink: 0,
           }}>
             <AlertTriangle size={18} />
@@ -49,7 +49,7 @@ export default function DeleteConfirmModal({
           }}>{cancelText}</button>
           <button onClick={onConfirm} style={{
             padding: '8px 16px', borderRadius: 8, border: 'none',
-            background: danger ? C.primary : C.purple,
+            background: danger ? C.danger : C.purple,
             color: '#fff', cursor: 'pointer',
             fontSize: 13, fontWeight: 600, fontFamily: FONT,
           }}>{confirmText}</button>

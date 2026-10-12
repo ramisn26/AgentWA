@@ -8,9 +8,9 @@ import { C, FONT } from '../constants.js';
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 const B = {
-  bg: '#F7F7F3',
+  bg: 'var(--c-surfaceAlt)',
   card: '#FFFFFF',
-  cardBorder: '#E5E5E0',
+  cardBorder: 'var(--c-border)',
   innerBg: '#FAFAF7',
   innerBorder: '#EEEEE8',
   rowSep: '#F5F5F0',
@@ -28,7 +28,7 @@ const B = {
   greenBright: '#1D9E75',
   greenBg: '#E1F5EE',
   red: '#A32D2D',
-  redBg: '#FCEBEB',
+  redBg: 'var(--c-primaryLight)',
   orange: '#E65100',
   orangeBg: '#FFF3E0',
 };

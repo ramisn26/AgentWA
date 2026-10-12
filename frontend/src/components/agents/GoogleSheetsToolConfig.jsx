@@ -219,7 +219,7 @@ export default function GoogleSheetsToolConfig({ agentId, existingTool, onCancel
 
       {error && (
         <div style={{ padding: '8px 12px', borderRadius: 8, marginBottom: 12,
-          background: '#FCEBEB', color: '#A32D2D', border: '1px solid #FBC8C8', fontSize: 12 }}>
+          background: 'var(--c-primaryLight)', color: '#A32D2D', border: '1px solid #FBC8C8', fontSize: 12 }}>
           {error}
         </div>
       )}

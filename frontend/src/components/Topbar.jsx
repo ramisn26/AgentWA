@@ -1,11 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import { Info, LogOut, Settings, AlertTriangle, Star, Github } from 'lucide-react';
-import { C, FONT } from '../constants.js';
+import { Info, LogOut, Settings, AlertTriangle } from 'lucide-react';
+import { C, FONT, BRAND_FONT } from '../constants.js';
+import { BRAND } from '../brand.js';
 import { api } from '../api.js';
-
-// This project's GitHub repo — powers the star counter in the header.
-const GITHUB_REPO = 'Forgemind-git/ForgeChat';
-const GITHUB_REPO_URL = `https://github.com/${GITHUB_REPO}`;
 
 const ROLE_TITLE = { admin: 'Owner', bda_sales: 'Sales', customer: 'Customer', viewer: 'Viewer' };
 
@@ -18,19 +15,7 @@ export default function Topbar({ user, onLogout, onNavigate }) {
   const canAbout = isAdmin || pages.includes('about');
   const [userOpen, setUserOpen] = useState(false);
   const [unhealthyAccounts, setUnhealthyAccounts] = useState([]);
-  const [stars, setStars] = useState(null);
   const ref = useRef(null);
-
-  // Fetch the repo's live star count from the public GitHub API. Best-effort:
-  // if it fails (offline / rate-limited) we just show the button without a count.
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`https://api.github.com/repos/${GITHUB_REPO}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (!cancelled && d && typeof d.stargazers_count === 'number') setStars(d.stargazers_count); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, []);
 
   useEffect(() => {
     const handleClick = (e) => {
@@ -60,7 +45,7 @@ export default function Topbar({ user, onLogout, onNavigate }) {
       <div
         onClick={() => onNavigate('admin-settings')}
         style={{
-          background: '#A32D2D', color: '#fff', padding: '8px 16px',
+          background: C.danger, color: '#fff', padding: '8px 16px',
           fontSize: 12, fontFamily: FONT, display: 'flex', alignItems: 'center',
           justifyContent: 'center', gap: 8, cursor: 'pointer', fontWeight: 500,
         }}
@@ -72,89 +57,47 @@ export default function Topbar({ user, onLogout, onNavigate }) {
       </div>
     )}
     <div style={{
-      height: 56,
+      height: 60,
       background: C.headerBg,
       display: 'flex',
       alignItems: 'center',
       paddingLeft: 0,
       paddingRight: 20,
-      borderBottom: `1px solid ${C.headerBorder}`,
       flexShrink: 0,
       zIndex: 100,
       position: 'relative',
     }}>
-      {/* Logo area — aligns with sidebar */}
+      {/* Brand lockup — aligns with the sidebar */}
       <button
+        type="button"
         onClick={() => onNavigate('chats')}
+        title={BRAND.name}
         style={{
-          width: 224,
-          flexShrink: 0,
-          display: 'flex',
-          alignItems: 'center',
-          paddingLeft: 15,
-          gap: 8,
-          borderRight: `1px solid ${C.headerBorder}`,
-          height: '100%',
-          background: 'transparent',
-          border: 'none',
-          borderRightWidth: 1,
-          borderRightStyle: 'solid',
-          cursor: 'pointer',
-          textAlign: 'left',
+          width: 232, flexShrink: 0, height: '100%',
+          display: 'flex', alignItems: 'center', gap: 10, paddingLeft: 16,
+          background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left',
         }}
       >
         <img
-          src="/forgemind-logo.png"
-          alt="ForgeMind"
-          style={{ height: 36, width: 36, objectFit: 'contain', flexShrink: 0 }}
+          src={BRAND.mark}
+          alt=""
+          style={{ height: 30, width: 'auto', flexShrink: 0 }}
           onError={e => { e.currentTarget.style.display = 'none'; }}
         />
-        <div style={{ lineHeight: 1.1 }}>
-          <div style={{
-            fontSize: 16,
-            fontWeight: 900,
-            color: C.headerText,
-            fontFamily: FONT,
-            letterSpacing: '-0.01em',
-            textTransform: 'uppercase',
-            lineHeight: 1,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-          }}>
-            PaviRami 
-            <span style={{
-              background: C.primary,
-              color: '#fff',
-              padding: '2px 7px',
-              borderRadius: 6,
-              lineHeight: 1.2,
-              display: 'inline-block',
-            }}>AI Zen</span>
-          </div>
-        </div>
+        <span style={{ lineHeight: 1.15, minWidth: 0 }}>
+          <span style={{ display: 'block', fontFamily: BRAND_FONT, fontSize: 15, fontWeight: 700, color: C.onNavy, letterSpacing: '-.005em', whiteSpace: 'nowrap' }}>
+            {BRAND.name}
+          </span>
+          <span style={{ display: 'block', fontFamily: BRAND_FONT, fontSize: 10, fontWeight: 500, color: C.onNavyMuted, marginTop: 2, whiteSpace: 'nowrap' }}>
+            {BRAND.tagline}
+          </span>
+        </span>
       </button>
 
       <div style={{ flex: 1 }} />
 
       {/* Right controls */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        {/* GitHub stars — opens this project's repo */}
-        {/*<button
-          onClick={() => window.open(GITHUB_REPO_URL, '_blank', 'noopener,noreferrer')}
-          title="Star ForgeChat on GitHub"
-          style={{
-            height: 36, borderRadius: 9, padding: '0 12px',
-            background: C.headerSurface, border: `1.5px solid ${C.headerBorder}`,
-            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7,
-            color: C.headerText, fontFamily: FONT, fontSize: 13, fontWeight: 600,
-          }}
-        >
-          <Github size={16} color={C.headerText} />
-          <Star size={14} color="#F5B400" fill="#F5B400" />
-          <span style={{ minWidth: 8, textAlign: 'left' }}>{stars == null ? '—' : stars}</span>
-        </button>
-
         {/* About Us */}
         {canAbout && <button
           onClick={() => onNavigate('about')}
@@ -181,7 +124,7 @@ export default function Topbar({ user, onLogout, onNavigate }) {
               width: 36,
               height: 36,
               borderRadius: 9,
-              background: 'linear-gradient(135deg, #534AB7, #7B72E0)',
+              background: C.brandGradient,
               border: userOpen ? '2px solid #fff' : `1.5px solid ${C.headerBorder}`,
               cursor: 'pointer',
               display: 'flex',

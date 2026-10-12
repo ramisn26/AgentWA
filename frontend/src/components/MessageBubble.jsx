@@ -220,7 +220,7 @@ function VoiceMessagePlayer({ src, message, isOutgoing, senderAvatarUrl, contact
   // Avatar config
   const avatarUrl = isOutgoing ? senderAvatarUrl : null;
   const avatarInitial = isOutgoing ? 'F' : (contactName ? contactName.charAt(0).toUpperCase() : '?');
-  const avatarBg = isOutgoing ? '#008069' : '#6B7280';
+  const avatarBg = isOutgoing ? 'var(--c-primary)' : '#6B7280';
 
   return (
     <div style={{ width: '100%', maxWidth: 360 }}>
@@ -271,7 +271,7 @@ function VoiceMessagePlayer({ src, message, isOutgoing, senderAvatarUrl, contact
           )}
           <div style={{
             position: 'absolute', bottom: -2, right: -2,
-            width: 14, height: 14, borderRadius: '50%', background: '#008069',
+            width: 14, height: 14, borderRadius: '50%', background: 'var(--c-primary)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             border: `2px solid ${bubbleBg}`,
           }}>

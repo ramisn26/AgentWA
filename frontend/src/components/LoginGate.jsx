@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Lock, LogIn, Eye, EyeOff } from 'lucide-react';
 import { api } from '../api.js';
-import { C, FONT } from '../constants.js';
+import { C, FONT, BRAND_FONT } from '../constants.js';
+import { BRAND } from '../brand.js';
 
 export default function LoginGate({ onLogin }) {
   const [email, setEmail] = useState('');
@@ -32,108 +33,61 @@ export default function LoginGate({ onLogin }) {
       height: '100%',
       fontFamily: FONT,
     }}>
-      {/* Left brand panel — fills full height */}
+      {/* Left brand panel — navy, mirroring pavirami.in */}
       <div className="login-brand-panel" style={{
         flex: 1,
         minWidth: 0,
-        background: C.headerBg,
+        background: C.navy,
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'center',
-        padding: '48px 64px',
+        padding: '40px 64px 28px',
         position: 'relative',
         overflow: 'hidden',
       }}>
-        {/* Subtle radial accent */}
-        <div style={{
-          position: 'absolute',
-          top: '-20%',
-          right: '-10%',
-          width: '60%',
-          height: '60%',
-          background: 'radial-gradient(circle, rgba(220,38,38,0.15) 0%, transparent 70%)',
-          pointerEvents: 'none',
+        {/* Soft glow in the mark's cyan and violet */}
+        <div aria-hidden style={{
+          position: 'absolute', top: '-18%', right: '-14%', width: '62%', height: '62%',
+          background: 'radial-gradient(circle, rgba(0,192,240,0.16) 0%, transparent 68%)', pointerEvents: 'none',
         }} />
-        <div style={{
-          position: 'absolute',
-          bottom: '-20%',
-          left: '-10%',
-          width: '50%',
-          height: '50%',
-          background: 'radial-gradient(circle, rgba(83,74,183,0.12) 0%, transparent 70%)',
-          pointerEvents: 'none',
+        <div aria-hidden style={{
+          position: 'absolute', bottom: '-22%', left: '-12%', width: '56%', height: '56%',
+          background: 'radial-gradient(circle, rgba(139,108,240,0.16) 0%, transparent 68%)', pointerEvents: 'none',
         }} />
 
-        <div style={{ position: 'relative', zIndex: 1, maxWidth: 480 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 40 }}>
-            <img
-              src="/forgemind-logo.gif"
-              alt="ForgeMind Logo"
-              style={{ height: 56, width: 56, objectFit: 'contain', flexShrink: 0 }}
-              onError={e => { e.currentTarget.style.display = 'none'; }}
-            />
-            <div style={{ lineHeight: 1.15 }}>
-              <div style={{
-                fontSize: 28,
-                fontWeight: 800,
-                letterSpacing: '-0.02em',
-                color: C.headerText,
-              }}>
-                Forge<span style={{ color: C.primary }}>Chat</span>
-              </div>
-              <div style={{
-                fontSize: 11,
-                fontWeight: 700,
-                color: C.headerMuted,
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                marginTop: 4,
-              }}>
-                powered by FMOS
-              </div>
-            </div>
-          </div>
-
+        <div style={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', maxWidth: 520 }}>
+          <img
+            src={BRAND.logo}
+            alt={BRAND.name}
+            style={{ width: 300, maxWidth: '80%', height: 'auto', marginBottom: 36, marginLeft: -8 }}
+          />
           <h1 style={{
-            fontSize: 42,
-            fontWeight: 800,
-            color: C.headerText,
-            letterSpacing: '-0.03em',
-            lineHeight: 1.15,
-            marginBottom: 20,
+            fontFamily: BRAND_FONT,
+            fontSize: 38,
+            fontWeight: 700,
+            color: C.onNavy,
+            letterSpacing: '-0.02em',
+            lineHeight: 1.18,
+            margin: '0 0 18px',
           }}>
-            Manage conversations at scale
+            Every WhatsApp conversation, one calm inbox.
           </h1>
-          <p style={{
-            fontSize: 16,
-            color: C.headerMuted,
-            lineHeight: 1.6,
-            marginBottom: 40,
-          }}>
-            Reply to WhatsApp chats, build templates, send broadcasts, and automate responses — all from one place for your team.
+          <p style={{ fontSize: 16, color: C.onNavyMuted, lineHeight: 1.65, margin: 0, maxWidth: 460 }}>
+            Reply to customers, send broadcasts and let AI agents handle the routine —
+            built and supported by {BRAND.name}.
           </p>
-
         </div>
 
-        <a
-          href="https://forgemind.in/"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            position: 'absolute',
-            bottom: 32,
-            left: 64,
-            fontSize: 10,
-            fontWeight: 600,
-            color: '#52525b',
-            letterSpacing: '.06em',
-            textTransform: 'uppercase',
-            textDecoration: 'none',
-            cursor: 'pointer',
-          }}
-        >
-          FORGEMIND <span style={{ color: C.primary }}>AI</span>
-        </a>
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: 18, fontSize: 12, color: C.onNavyMuted }}>
+          <span>
+            Powered by <a href={BRAND.website} target="_blank" rel="noopener noreferrer"
+              style={{ color: C.onNavy, fontFamily: BRAND_FONT, fontWeight: 700, textDecoration: 'none' }}>{BRAND.poweredBy}</a>
+          </span>
+          <span style={{ opacity: .4 }}>·</span>
+          {BRAND.socials.map(soc => (
+            <a key={soc.key} href={soc.href} target="_blank" rel="noopener noreferrer"
+              style={{ color: C.onNavyMuted, textDecoration: 'none' }}>{soc.label}</a>
+          ))}
+        </div>
       </div>
 
       {/* Right form panel */}
@@ -189,7 +143,7 @@ export default function LoginGate({ onLogin }) {
               </div>
               <input
                 type="email"
-                placeholder="admin@forgemind.space"
+                placeholder="you@company.com"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 autoFocus
@@ -265,8 +219,8 @@ export default function LoginGate({ onLogin }) {
 
             {error && (
               <div style={{
-                background: C.primaryLight,
-                color: '#A32D2D',
+                background: '#FDECEE',
+                color: '#A3202B',
                 borderRadius: 8,
                 padding: '10px 14px',
                 fontSize: 13,

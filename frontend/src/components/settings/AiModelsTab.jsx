@@ -78,7 +78,7 @@ export default function AiModelsTab() {
         {error && (
           <div style={{
             padding: '10px 14px', borderRadius: 8, marginBottom: 16,
-            background: '#FCEBEB', color: '#A32D2D', border: '1px solid #FBC8C8', fontSize: 13,
+            background: 'var(--c-primaryLight)', color: '#A32D2D', border: '1px solid #FBC8C8', fontSize: 13,
           }}>
             {error}
           </div>

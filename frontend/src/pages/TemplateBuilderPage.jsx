@@ -16,14 +16,14 @@ import { C, FONT, maskPhone } from '../constants.js';
 
 // ─── Builder-local Design Tokens (purple accent per plan) ─────────────────────
 const B = {
-  bg: '#F7F7F3',
+  bg: 'var(--c-surfaceAlt)',
   card: '#FFFFFF',
-  cardBorder: '#E5E5E0',
+  cardBorder: 'var(--c-border)',
   innerBg: '#FAFAF7',
   innerBorder: '#EEEEE8',
   sectionBg: '#F8F7F2',
   sectionBorder: '#EEEEE8',
-  divider: '#F0F0EA',
+  divider: 'var(--c-border)',
   rowSep: '#F5F5F0',
   t1: '#111111',
   t2: '#222222',
@@ -39,7 +39,7 @@ const B = {
   greenBright: '#1D9E75',
   greenBg: '#E1F5EE',
   red: '#A32D2D',
-  redBg: '#FCEBEB',
+  redBg: 'var(--c-primaryLight)',
   orange: '#E65100',
   orangeBg: '#FFF3E0',
   warn: '#854F0B',
@@ -413,7 +413,7 @@ function ButtonsSection({ buttons, onAdd, onRemove, onUpdate, category, errors }
                       <input style={{ border: `1.5px solid ${errors[`btn_text_${i}`] ? B.red : '#D5D5D0'}`, borderRadius: 8, padding: '7px 12px', fontSize: 12, fontFamily: FONT, width: '100%', background: 'var(--c-cardBg)', color: 'var(--c-text)', outline: 'none' }}
                         placeholder={btn.type === 'QUICK_REPLY' ? 'e.g. Yes, Confirm' : btn.type === 'URL' ? 'e.g. View Order' : 'e.g. Call Us'}
                         value={btn.text || ''} maxLength={25} onChange={e => onUpdate(i, 'text', e.target.value)} />
-                      <div style={{ fontSize: 10, color: B.t7, textAlign: 'right', marginTop: 2, fontFamily: "'DM Mono', monospace" }}>{(btn.text || '').length}/25</div>
+                      <div style={{ fontSize: 10, color: B.t7, textAlign: 'right', marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>{(btn.text || '').length}/25</div>
                     </div>
                     {btn.type !== 'QUICK_REPLY' && (
                       <div>
@@ -431,7 +431,7 @@ function ButtonsSection({ buttons, onAdd, onRemove, onUpdate, category, errors }
                   {btn.type === 'URL' && urlVars.length > 0 && (
                     <div style={{ padding: '10px 12px', background: B.sectionBg, border: `1px solid ${errors[`btn_urlsample_${i}`] ? B.red + '44' : B.sectionBorder}`, borderRadius: 8 }}>
                       <div style={{ fontSize: 11, fontWeight: 600, color: B.t4, marginBottom: 6, fontFamily: FONT }}>
-                        URL has <span style={{ fontFamily: "'DM Mono', monospace", background: B.accentBg, padding: '1px 5px', borderRadius: 4, fontSize: 11, color: B.accentDark }}>{'{{1}}'}</span> — provide a sample URL:
+                        URL has <span style={{ fontFamily: "'JetBrains Mono', monospace", background: B.accentBg, padding: '1px 5px', borderRadius: 4, fontSize: 11, color: B.accentDark }}>{'{{1}}'}</span> — provide a sample URL:
                       </div>
                       <input style={{ border: `1.5px solid ${errors[`btn_urlsample_${i}`] ? B.red : '#D5D5D0'}`, borderRadius: 8, padding: '7px 12px', fontSize: 12, fontFamily: FONT, width: '100%', background: 'var(--c-cardBg)', color: 'var(--c-text)', outline: 'none' }}
                         placeholder="https://example.com/orders/ORD-12345"
@@ -619,7 +619,7 @@ function TemplateList({ templates, loading, onAdd, onEdit, onDelete, onView, onB
                       {t.whatsappAccountName ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                           <span style={{ fontSize: 12, fontWeight: 600, color: B.t2, fontFamily: FONT }}>{t.whatsappAccountName}</span>
-                          <span style={{ fontSize: 10, color: B.t6, fontFamily: 'DM Mono, monospace' }}>{maskPhone(t.whatsappAccountPhone)}</span>
+                          <span style={{ fontSize: 10, color: B.t6, fontFamily: 'JetBrains Mono, monospace' }}>{maskPhone(t.whatsappAccountPhone)}</span>
                         </div>
                       ) : (
                         <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 99, background: '#FFF3E0', color: '#E65100', fontWeight: 600, fontFamily: FONT }}>Unassigned</span>
@@ -644,7 +644,7 @@ function TemplateList({ templates, loading, onAdd, onEdit, onDelete, onView, onB
                                 background: s.id === t.id ? STATUSES[s.status]?.bg : 'var(--c-cardBg)',
                                 color: STATUSES[s.status]?.color || B.t5,
                                 fontWeight: 700, cursor: 'pointer', textTransform: 'uppercase',
-                                fontFamily: 'DM Mono, monospace',
+                                fontFamily: 'JetBrains Mono, monospace',
                               }}
                             >{s.language}</button>
                           ))}
@@ -1040,7 +1040,7 @@ function BuilderView({ template, onBack, onSave, readOnly, accounts }) {
               <div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: B.green, fontFamily: FONT }}>Submitted to Meta for review</div>
                 <div style={{ fontSize: 11, color: B.green, opacity: 0.8, fontFamily: FONT }}>
-                  Meta ID: <span style={{ fontFamily: "'DM Mono', monospace" }}>{templateId}</span> · {submittedAt ? new Date(submittedAt).toLocaleString('en-IN') : ''} · Reviews within ~24 hrs · Auto-refreshes every 4h
+                  Meta ID: <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{templateId}</span> · {submittedAt ? new Date(submittedAt).toLocaleString('en-IN') : ''} · Reviews within ~24 hrs · Auto-refreshes every 4h
                 </div>
               </div>
             </div>
@@ -1187,11 +1187,11 @@ function BuilderView({ template, onBack, onSave, readOnly, accounts }) {
                   {showErrors && errors.headerTextLen && <Hint error>{errors.headerTextLen}</Hint>}
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
                     <Hint>Max 1 variable — <code style={{ background: B.accentBg, padding: '1px 5px', borderRadius: 4, fontSize: 11, color: B.accentDark }}>{'{{1}}'}</code></Hint>
-                    <span style={{ fontSize: 11, color: B.t7, fontFamily: "'DM Mono', monospace" }}>{headerText.length}/60</span>
+                    <span style={{ fontSize: 11, color: B.t7, fontFamily: "'JetBrains Mono', monospace" }}>{headerText.length}/60</span>
                   </div>
                   {hdrVars.length > 0 && (
                     <div style={{ marginTop: 10, padding: '10px 12px', background: B.sectionBg, border: `1px solid ${showErrors && errors.headerSamples ? B.red + '55' : B.sectionBorder}`, borderRadius: 8 }}>
-                      <Lbl required>Sample for <span style={{ fontFamily: "'DM Mono', monospace", background: B.accentBg, padding: '1px 5px', borderRadius: 4, fontSize: 11, color: B.accentDark }}>{`{{${hdrVars[0]}}}`}</span></Lbl>
+                      <Lbl required>Sample for <span style={{ fontFamily: "'JetBrains Mono', monospace", background: B.accentBg, padding: '1px 5px', borderRadius: 4, fontSize: 11, color: B.accentDark }}>{`{{${hdrVars[0]}}}`}</span></Lbl>
                       <input style={showErrors && errors.headerSamples ? inpErrStyle : { ...inpStyle, fontSize: 12, padding: '7px 12px' }} placeholder="Sample header value" value={samples[hdrVars[0]] || ''} onChange={e => setSamples({ ...samples, [hdrVars[0]]: e.target.value })} readOnly={readOnly} />
                       {showErrors && errors.headerSamples && <Hint error>{errors.headerSamples}</Hint>}
                     </div>
@@ -1315,7 +1315,7 @@ function BuilderView({ template, onBack, onSave, readOnly, accounts }) {
                 value={body} onChange={e => setBody(e.target.value)} maxLength={1024} readOnly={readOnly} />
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5 }}>
                 {showErrors && errors.body ? <Hint error>{errors.body}</Hint> : <Hint>*bold* · _italic_ · ~strikethrough~ · {'{{1}}'} variables</Hint>}
-                <span style={{ fontSize: 11, color: B.t7, fontFamily: "'DM Mono', monospace", flexShrink: 0, marginLeft: 8 }}>{body.length}/1024</span>
+                <span style={{ fontSize: 11, color: B.t7, fontFamily: "'JetBrains Mono', monospace", flexShrink: 0, marginLeft: 8 }}>{body.length}/1024</span>
               </div>
 
               {/* Auth add-ons */}
@@ -1328,7 +1328,7 @@ function BuilderView({ template, onBack, onSave, readOnly, accounts }) {
                     </div>
                     {codeExpiry !== '' && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                        <input style={showErrors && errors.codeExpiry ? { ...inpStyle, width: 70, textAlign: 'center', fontFamily: "'DM Mono', monospace" } : { ...inpStyle, width: 70, textAlign: 'center', fontFamily: "'DM Mono', monospace" }} type="number" min="1" max="90" value={codeExpiry} onChange={e => setCodeExpiry(e.target.value)} readOnly={readOnly} />
+                        <input style={showErrors && errors.codeExpiry ? { ...inpStyle, width: 70, textAlign: 'center', fontFamily: "'JetBrains Mono', monospace" } : { ...inpStyle, width: 70, textAlign: 'center', fontFamily: "'JetBrains Mono', monospace" }} type="number" min="1" max="90" value={codeExpiry} onChange={e => setCodeExpiry(e.target.value)} readOnly={readOnly} />
                         <span style={{ fontSize: 12, color: B.t5, whiteSpace: 'nowrap', fontFamily: FONT }}>mins (1–90)</span>
                       </div>
                     )}
@@ -1346,7 +1346,7 @@ function BuilderView({ template, onBack, onSave, readOnly, accounts }) {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                     {bodyVars.map(v => (
                       <div key={v}>
-                        <Lbl required><span style={{ fontFamily: "'DM Mono', monospace", background: B.accentBg, padding: '1px 6px', borderRadius: 4, fontSize: 11, color: B.accentDark }}>{`{{${v}}}`}</span></Lbl>
+                        <Lbl required><span style={{ fontFamily: "'JetBrains Mono', monospace", background: B.accentBg, padding: '1px 6px', borderRadius: 4, fontSize: 11, color: B.accentDark }}>{`{{${v}}}`}</span></Lbl>
                         <input style={showErrors && !samples[v]?.trim() ? inpErrStyle : { ...inpStyle, fontSize: 12, padding: '7px 12px' }} placeholder={`Sample for {{${v}}}`} value={samples[v] || ''} onChange={e => setSamples({ ...samples, [v]: e.target.value })} readOnly={readOnly} />
                       </div>
                     ))}
@@ -1364,7 +1364,7 @@ function BuilderView({ template, onBack, onSave, readOnly, accounts }) {
                 {showErrors && errors.footerLen && <Hint error>{errors.footerLen}</Hint>}
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
                   <Hint>Small grey text · No variables allowed</Hint>
-                  <span style={{ fontSize: 11, color: B.t7, fontFamily: "'DM Mono', monospace" }}>{footer.length}/60</span>
+                  <span style={{ fontSize: 11, color: B.t7, fontFamily: "'JetBrains Mono', monospace" }}>{footer.length}/60</span>
                 </div>
               </Sec>
             )}
@@ -1414,10 +1414,10 @@ function BuilderView({ template, onBack, onSave, readOnly, accounts }) {
                     {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? 'Copied!' : 'Copy JSON'}
                   </button>
                 </div>
-                <div style={{ marginBottom: 8, fontSize: 11, color: B.t5, fontFamily: "'DM Mono', monospace", background: B.sectionBg, padding: '6px 10px', borderRadius: 6 }}>
+                <div style={{ marginBottom: 8, fontSize: 11, color: B.t5, fontFamily: "'JetBrains Mono', monospace", background: B.sectionBg, padding: '6px 10px', borderRadius: 6 }}>
                   POST https://graph.facebook.com/v20.0/<strong style={{ color: B.accent }}>{'{WABA_ID}'}</strong>/message_templates
                 </div>
-                <div style={{ background: '#1A1A2E', borderRadius: 10, padding: '14px 16px', overflow: 'auto', fontFamily: "'DM Mono', monospace", fontSize: 11, color: '#E8E8F0', lineHeight: 1.7, maxHeight: 320 }}>
+                <div style={{ background: '#1A1A2E', borderRadius: 10, padding: '14px 16px', overflow: 'auto', fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: '#E8E8F0', lineHeight: 1.7, maxHeight: 320 }}>
                   <pre style={{ margin: 0 }}>{JSON.stringify(payload, null, 2)}</pre>
                 </div>
               </div>
@@ -1469,7 +1469,7 @@ function BuilderView({ template, onBack, onSave, readOnly, accounts }) {
                 <div key={label} style={{ borderBottom: `1px solid ${B.rowSep}`, paddingBottom: 6, marginBottom: 6 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
                     <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: B.t6, flexShrink: 0, fontFamily: FONT }}>{label}</span>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: B.t2, fontFamily: mono ? "'DM Mono', monospace" : FONT, textAlign: 'right', wordBreak: 'break-all', maxWidth: '62%' }}>{val}</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: B.t2, fontFamily: mono ? "'JetBrains Mono', monospace" : FONT, textAlign: 'right', wordBreak: 'break-all', maxWidth: '62%' }}>{val}</span>
                   </div>
                 </div>
               ))}
@@ -1546,7 +1546,7 @@ function TemplateLibraryPickerModal({ headerType, accountId, onClose, onPicked }
         }}
       >
         <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--c-border)', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Library size={20} color="#dc2626" />
+          <Library size={20} color="var(--c-primary)" />
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--c-text)' }}>Pick {targetType} from Media Library</div>
             <div style={{ fontSize: 12, color: 'var(--c-textSecondary)', marginTop: 2 }}>
@@ -1578,7 +1578,7 @@ function TemplateLibraryPickerModal({ headerType, accountId, onClose, onPicked }
                     onClick={() => setSelected(m)}
                     style={{
                       textAlign: 'left', padding: 0, background: 'var(--c-cardBg)', borderRadius: 10,
-                      border: `2px solid ${isSel ? '#dc2626' : '#E5E5E0'}`,
+                      border: `2px solid ${isSel ? 'var(--c-primary)' : 'var(--c-border)'}`,
                       cursor: 'pointer', overflow: 'hidden', fontFamily: FONT,
                     }}
                   >
@@ -1616,7 +1616,7 @@ function TemplateLibraryPickerModal({ headerType, accountId, onClose, onPicked }
                         <Icon size={40} color={targetType === 'video' ? '#8B5CF6' : '#F59E0B'} />
                       )}
                       {isSel && (
-                        <div style={{ position: 'absolute', top: 6, right: 6, background: '#dc2626', color: '#fff', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ position: 'absolute', top: 6, right: 6, background: 'var(--c-primary)', color: '#fff', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <CheckCircle2 size={14} />
                         </div>
                       )}
@@ -1649,7 +1649,7 @@ function TemplateLibraryPickerModal({ headerType, accountId, onClose, onPicked }
             disabled={!selected || uploading}
             style={{
               padding: '9px 18px', borderRadius: 8, border: 'none',
-              background: !selected ? 'var(--c-hover)' : '#dc2626', color: '#fff',
+              background: !selected ? 'var(--c-hover)' : 'var(--c-primary)', color: '#fff',
               cursor: !selected || uploading ? 'not-allowed' : 'pointer',
               fontSize: 13, fontWeight: 600, fontFamily: FONT,
               display: 'inline-flex', alignItems: 'center', gap: 6,

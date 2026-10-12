@@ -966,17 +966,17 @@ function WhatsappAccountsTab() {
                     <span style={{ fontWeight: 600 }}>{acc.displayName}</span>
                   </td>
                   <td style={tdStyle}>{maskPhone(acc.displayPhoneNumber)}</td>
-                  <td style={{ ...tdStyle, fontFamily: 'DM Mono, monospace', fontSize: 11 }}>{acc.phoneNumberId}</td>
-                  <td style={{ ...tdStyle, fontFamily: 'DM Mono, monospace', fontSize: 11 }}>{acc.wabaId}</td>
-                  <td style={{ ...tdStyle, fontFamily: 'DM Mono, monospace', fontSize: 11, color: C.textMuted }}>{acc.accessTokenMasked}</td>
+                  <td style={{ ...tdStyle, fontFamily: 'JetBrains Mono, monospace', fontSize: 11 }}>{acc.phoneNumberId}</td>
+                  <td style={{ ...tdStyle, fontFamily: 'JetBrains Mono, monospace', fontSize: 11 }}>{acc.wabaId}</td>
+                  <td style={{ ...tdStyle, fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: C.textMuted }}>{acc.accessTokenMasked}</td>
                   <td style={tdStyle}>
                     {(() => {
                       const h = acc.healthStatus || 'unknown';
                       const styles = {
                         healthy: { bg: '#E1F5EE', fg: '#0F6E56', label: 'Healthy' },
-                        invalid_token: { bg: '#FCEBEB', fg: '#A32D2D', label: 'Token expired' },
+                        invalid_token: { bg: 'var(--c-primaryLight)', fg: '#A32D2D', label: 'Token expired' },
                         rate_limited: { bg: '#FFF3E0', fg: '#E65100', label: 'Rate limited' },
-                        unknown_error: { bg: '#FCEBEB', fg: '#A32D2D', label: 'Error' },
+                        unknown_error: { bg: 'var(--c-primaryLight)', fg: '#A32D2D', label: 'Error' },
                         unknown: { bg: '#EEEDE8', fg: C.textMuted, label: 'Not checked' },
                       };
                       const s = styles[h] || styles.unknown;
@@ -1506,7 +1506,7 @@ function UsersTab({ currentUser }) {
                         <button onClick={() => openEdit(u)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: C.purple, fontSize: 12, fontWeight: 600, marginRight: 12 }}>Edit</button>
                         <button onClick={() => resetPassword(u)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: C.textSecondary, fontSize: 12, fontWeight: 600, marginRight: 12 }}>Reset password</button>
                         <button onClick={() => setDeleteModal({ open: true, user: u })} disabled={isSelf}
-                          style={{ border: 'none', background: 'transparent', cursor: isSelf ? 'not-allowed' : 'pointer', color: isSelf ? C.textMuted : C.primary, fontSize: 12, fontWeight: 600, opacity: isSelf ? 0.5 : 1 }}>Delete</button>
+                          style={{ border: 'none', background: 'transparent', cursor: isSelf ? 'not-allowed' : 'pointer', color: isSelf ? C.textMuted : C.danger, fontSize: 12, fontWeight: 600, opacity: isSelf ? 0.5 : 1 }}>Delete</button>
                       </td>
                     </tr>
                   );

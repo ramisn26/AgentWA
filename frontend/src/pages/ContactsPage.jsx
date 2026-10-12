@@ -716,7 +716,7 @@ export default function ContactsPage({ user, onNavigate }) {
               <p style={{ fontSize: 13, color: C.textSecondary, margin: '0 0 18px', lineHeight: 1.5 }}>
                 Add contacts to <strong style={{ color: C.text }}>{selectedNumberName}</strong>. Upload a sheet with
                 {' '}<strong style={{ color: C.text }}>Name</strong> and <strong style={{ color: C.text }}>Phone Number</strong> columns
-                (include the country code, e.g. <span style={{ fontFamily: "'DM Mono', monospace" }}>919876543210</span>).
+                (include the country code, e.g. <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>919876543210</span>).
               </p>
 
               {importResult ? (
@@ -733,7 +733,7 @@ export default function ContactsPage({ user, onNavigate }) {
                       { label: 'Skipped', value: importResult.skipped?.length || 0, color: importResult.skipped?.length ? C.primary : C.textMuted },
                     ].map(s => (
                       <div key={s.label} style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 10, padding: '12px 14px', textAlign: 'center' }}>
-                        <div style={{ fontSize: 24, fontWeight: 700, color: s.color, fontFamily: "'DM Mono', monospace" }}>{s.value}</div>
+                        <div style={{ fontSize: 24, fontWeight: 700, color: s.color, fontFamily: "'JetBrains Mono', monospace" }}>{s.value}</div>
                         <div style={{ fontSize: 11, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.04em', marginTop: 2 }}>{s.label}</div>
                       </div>
                     ))}
@@ -802,7 +802,7 @@ export default function ContactsPage({ user, onNavigate }) {
               )}
 
               {importError && (
-                <div style={{ marginTop: 14, background: '#FCEBEB', color: '#A32D2D', borderRadius: 8, padding: '10px 14px', fontSize: 13 }}>
+                <div style={{ marginTop: 14, background: 'var(--c-primaryLight)', color: '#A32D2D', borderRadius: 8, padding: '10px 14px', fontSize: 13 }}>
                   {importError}
                 </div>
               )}
@@ -992,7 +992,7 @@ export default function ContactsPage({ user, onNavigate }) {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                           {templateVars.map(v => (
                             <div key={v} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                              <span style={{ fontSize: 12, fontWeight: 600, color: C.text, fontFamily: "'DM Mono', monospace", background: 'var(--c-hover)', padding: '4px 8px', borderRadius: 4, whiteSpace: 'nowrap' }}>{'{{' + v + '}}'}</span>
+                              <span style={{ fontSize: 12, fontWeight: 600, color: C.text, fontFamily: "'JetBrains Mono', monospace", background: 'var(--c-hover)', padding: '4px 8px', borderRadius: 4, whiteSpace: 'nowrap' }}>{'{{' + v + '}}'}</span>
                               <span style={{ fontSize: 12, color: C.textMuted }}>→</span>
                               <SearchableSelect
                                 value={broadcastVariableMapping[v] || ''}

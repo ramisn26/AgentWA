@@ -476,7 +476,7 @@ function DealModal({ deal, defaultStageId, pipeline, stages, isAdmin, onClose, o
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 20 }}>
         <div>
           {isAdmin && editing && (
-            <button onClick={remove} style={{ ...ghostBtnStyle, color: C.primary, borderColor: '#F3D2D2' }}><Trash2 size={14} /> Delete</button>
+            <button onClick={remove} style={{ ...ghostBtnStyle, color: C.danger, borderColor: '#F3D2D2' }}><Trash2 size={14} /> Delete</button>
           )}
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
@@ -574,7 +574,7 @@ function StagesModal({ pipeline, onClose, onChanged }) {
               triggerStyle={{ padding: '7px 9px', fontSize: 12 }}
             />
             <button onClick={() => saveStage(s)} disabled={busy} style={{ ...iconBtnStyle, color: C.green }} title="Save"><Check size={16} /></button>
-            <button onClick={() => delStage(s)} disabled={busy} style={{ ...iconBtnStyle, color: C.primary }} title="Delete"><Trash2 size={15} /></button>
+            <button onClick={() => delStage(s)} disabled={busy} style={{ ...iconBtnStyle, color: C.danger }} title="Delete"><Trash2 size={15} /></button>
           </div>
         ))}
       </div>

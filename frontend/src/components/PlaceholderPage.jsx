@@ -40,7 +40,7 @@ export default function PlaceholderPage({ title, subtitle, icon: Icon }) {
             width: 64,
             height: 64,
             borderRadius: 16,
-            background: '#F0F0EA',
+            background: 'var(--c-border)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

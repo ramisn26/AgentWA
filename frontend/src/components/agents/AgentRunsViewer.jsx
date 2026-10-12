@@ -75,7 +75,7 @@ export default function AgentRunsViewer({ agentId }) {
       <div style={{ marginTop: 16 }}>
       {error && (
         <div style={{ padding: '8px 12px', borderRadius: 8, marginBottom: 10,
-          background: '#FCEBEB', color: '#A32D2D', border: '1px solid #FBC8C8', fontSize: 12 }}>
+          background: 'var(--c-primaryLight)', color: '#A32D2D', border: '1px solid #FBC8C8', fontSize: 12 }}>
           {error}
         </div>
       )}
@@ -175,7 +175,7 @@ function Step({ step }) {
       background: C.cardBg, border: `1px solid ${C.border}`,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-        <Icon size={13} color={isTool ? '#0F7A38' : '#534AB7'} />
+        <Icon size={13} color={isTool ? '#0F7A38' : 'var(--c-purple)'} />
         <div style={{ fontSize: 12, fontWeight: 700, color: titleColor, flex: 1 }}>
           {isTool ? `Tool: ${step.toolType}` : 'LLM call'}
           {step.status === 'error' && ' · error'}

@@ -771,10 +771,10 @@ export default function ChatWindow({ waNumber, contactNumber, onContactSaved }) 
       overflow: 'hidden',
       background: 'var(--c-chatWall)',
     }}>
-      {/* Chat header — WhatsApp dark green style */}
+      {/* Chat header — PaviRami navy, continuous with the app shell */}
       <div style={{
         padding: '10px 16px',
-        background: '#008069',
+        background: 'var(--c-navy)',
         display: 'flex', alignItems: 'center', gap: 12,
         flexShrink: 0,
       }}>
@@ -854,7 +854,7 @@ export default function ChatWindow({ waNumber, contactNumber, onContactSaved }) 
                 {contactTags.length > 0 && (
                   <span style={{
                     position: 'absolute', top: -1, right: -1, minWidth: 15, height: 15, padding: '0 3px',
-                    borderRadius: 8, background: '#fff', color: '#008069', fontSize: 10, fontWeight: 700,
+                    borderRadius: 8, background: 'var(--c-brandCyan)', color: 'var(--c-navy)', fontSize: 10, fontWeight: 700,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: FONT,
                   }}>{contactTags.length}</span>
                 )}
@@ -1011,7 +1011,7 @@ export default function ChatWindow({ waNumber, contactNumber, onContactSaved }) 
       <div ref={scrollRef} style={{
         flex: 1, overflowY: 'auto',
         background: 'var(--c-chatWall)',
-        backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h50v50H0z' fill='%23d1d7db' fill-opacity='0.12'/%3E%3C/svg%3E")`,
+        backgroundImage: `url("data:image/svg+xml,%3Csvg width='22' height='22' viewBox='0 0 22 22' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='2' cy='2' r='1.1' fill='%23071B35' fill-opacity='0.07'/%3E%3C/svg%3E")`,
         backgroundRepeat: 'repeat',
         padding: '16px 20px',
         display: 'flex', flexDirection: 'column', gap: 2,

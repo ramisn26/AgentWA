@@ -11,7 +11,7 @@ html, body, #root {
 }
 
 body {
-  font-family: 'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Manrope Variable', 'Manrope', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: var(--c-pageBg);
@@ -22,52 +22,79 @@ input, button, textarea, select {
   font-family: inherit;
 }
 
-/* ─── Color palette (light only) ────────────────────────────────────────
-   Tokens consumed via the `C` object in constants.js (each maps to var(--c-*)).
-   This app is light-mode only — there is no dark theme. */
+/* ─── PaviRami AI Zen palette ──────────────────────────────────────────
+   Drawn from the brand mark on pavirami.in: deep navy shell (#071B35, the
+   site's theme colour), azure for actions, and the mark's cyan→violet
+   gradient reserved for brand moments (active nav, avatar, footer mark).
+   Tokens are consumed via the `C` object in constants.js (var(--c-*)). */
 :root {
-  --c-pageBg: #F7F7F3;
-  --c-sidebarBg: #FAF9F5;
-  --c-sidebarBorder: #E5E5E0;
-/*  --c-headerBg: #0F0F10;*/
-  --c-headerBg: #151595;
-  --c-headerText: #F5F5F2;
-  --c-headerMuted: #A1A1AA;
-  --c-headerBorder: rgba(255,255,255,.12);
-  --c-headerSurface: rgba(255,255,255,.06);
+  /* shell */
+  --c-navy: #071B35;
+  --c-navyRaised: #0C2645;
+  --c-navyLine: rgba(140, 180, 230, .12);
+  --c-onNavy: #E8F0FA;
+  --c-onNavyMuted: #8EA3BF;
+  --c-brandCyan: #00C0F0;
+  --c-brandViolet: #8B6CF0;
+  --c-brandGradient: linear-gradient(135deg, #00C0F0 0%, #3E8DF3 50%, #8B6CF0 100%);
+
+  --c-pageBg: #EEF3F9;
+  --c-sidebarBg: #071B35;
+  --c-sidebarBorder: rgba(140, 180, 230, .12);
+  --c-headerBg: #071B35;
+  --c-headerText: #E8F0FA;
+  --c-headerMuted: #8EA3BF;
+  --c-headerBorder: rgba(140, 180, 230, .16);
+  --c-headerSurface: rgba(140, 180, 230, .08);
+
+  /* workspace */
   --c-cardBg: #ffffff;
-  --c-border: #E5E5E0;
-  --c-borderDark: #d1d7db;
-  --c-text: #111111;
-  --c-textSecondary: #6B7280;
-  --c-textMuted: #8696a0;
-  --c-primary: #dc2626;
-  --c-primaryHover: #b91c1c;
-  --c-primaryLight: #FCEBEB;
-  --c-primaryText: #111b21;
-  --c-purple: #534AB7;
-  --c-green: #0F6E56;
+  --c-border: #DCE4EE;
+  --c-borderDark: #C6D2E1;
+  --c-text: #0B1A2E;
+  --c-textSecondary: #48596F;
+  --c-textMuted: #7A8CA4;
+  --c-primary: #0E74D4;
+  --c-primaryHover: #0A5DAD;
+  --c-primaryLight: #E4F1FC;
+  --c-primaryText: #0B1A2E;
+  --c-purple: #6D4FE0;
+  --c-green: #0F8A6A;
   --c-amber: #E8A317;
-  --c-shadowSm: 0 1px 2px rgba(0,0,0,.08);
-  --c-shadowMd: 0 8px 24px rgba(0,0,0,.06);
-  --c-shadowLg: 0 20px 60px rgba(0,0,0,.15);
-  --c-waBg: #e5ddd5;
-  /* chat */
+  --c-danger: #D92D3A;
+  --c-shadowSm: 0 1px 2px rgba(7, 27, 53, .08);
+  --c-shadowMd: 0 8px 24px rgba(7, 27, 53, .07);
+  --c-shadowLg: 0 24px 64px rgba(7, 27, 53, .22);
+  --c-waBg: #E7EDF4;
+
+  /* chat — bubbles stay WhatsApp-familiar; the wall goes cool */
   --c-incomingBg: #ffffff;
-  --c-incomingText: #111b21;
+  --c-incomingText: #0B1A2E;
   --c-outgoingBg: #d9fdd3;
-  --c-outgoingText: #111b21;
-  --c-chatBg: #e5ddd5;
+  --c-outgoingText: #0B1A2E;
+  --c-chatBg: #E7EDF4;
   --c-statusDelivered: #53bdeb;
-  --c-statusRead: #53bdeb;
-  --c-statusSent: #8696a0;
+  --c-statusRead: #2F9BEF;
+  --c-statusSent: #7A8CA4;
+
   /* neutral aliases for literal-heavy views */
   --c-surface: #ffffff;
-  --c-surfaceAlt: #F7F7F3;
-  --c-hover: #EFEEE6;
-  --c-chatPanel: #f0f2f5;
-  --c-chatWall: #efeae2;
+  --c-surfaceAlt: #F5F8FC;
+  --c-hover: #E9F0F8;
+  --c-chatPanel: #F2F6FB;
+  --c-chatWall: #E7EDF4;
 }
+
+::selection { background: rgba(14, 116, 212, .18); }
+:focus-visible { outline: 2px solid var(--c-primary); outline-offset: 2px; }
+
+/* Slim, quiet scrollbars that suit both the navy shell and the light canvas */
+* { scrollbar-width: thin; scrollbar-color: #C3CFDE transparent; }
+*::-webkit-scrollbar { width: 9px; height: 9px; }
+*::-webkit-scrollbar-thumb { background: #C3CFDE; border-radius: 9px; border: 2px solid transparent; background-clip: padding-box; }
+*::-webkit-scrollbar-thumb:hover { background-color: #9FB1C7; }
+.pr-shell-scroll { scrollbar-color: rgba(140,180,230,.25) transparent; }
+.pr-shell-scroll::-webkit-scrollbar-thumb { background-color: rgba(140,180,230,.25); }
 
 input, textarea, select { color: var(--c-text); }
 ::placeholder { color: var(--c-textMuted); opacity: 1; }

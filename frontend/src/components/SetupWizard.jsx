@@ -53,14 +53,14 @@ export default function SetupWizard({ onComplete }) {
         position: 'relative', overflow: 'hidden',
       }}>
         <div style={{ position: 'absolute', top: '-20%', right: '-10%', width: '60%', height: '60%',
-          background: 'radial-gradient(circle, rgba(220,38,38,0.15) 0%, transparent 70%)', pointerEvents: 'none' }} />
+          background: 'radial-gradient(circle, rgba(0,192,240,0.16) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', bottom: '-20%', left: '-10%', width: '50%', height: '50%',
-          background: 'radial-gradient(circle, rgba(83,74,183,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
+          background: 'radial-gradient(circle, rgba(139,108,240,0.16) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative', zIndex: 1, maxWidth: 480 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 40 }}>
-            <img src="/forgemind-logo.gif" alt="" style={{ width: 40, height: 40, borderRadius: 9 }} />
+            <img src="/pavirami-logo.png" alt="PaviRami AI Zen" style={{ width: 260, maxWidth: "80%", height: "auto", marginLeft: -8 }} />
           </div>
-          <h1 style={{ fontSize: 42, fontWeight: 800, color: C.headerText, letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: 20 }}>
+          <h1 style={{ fontFamily: "'Montserrat', 'Manrope Variable', 'Manrope', sans-serif", fontSize: 38, fontWeight: 700, color: C.headerText, letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: 20 }}>
             Let's get you set up
           </h1>
           <p style={{ fontSize: 16, color: C.headerMuted, lineHeight: 1.6, marginBottom: 40 }}>
@@ -123,7 +123,7 @@ export default function SetupWizard({ onComplete }) {
             </label>
 
             {error && (
-              <div style={{ background: '#FCEBEB', color: '#A32D2D', borderRadius: 8, padding: '10px 12px', fontSize: 13, fontWeight: 500, marginBottom: 18 }}>
+              <div style={{ background: 'var(--c-primaryLight)', color: '#A32D2D', borderRadius: 8, padding: '10px 12px', fontSize: 13, fontWeight: 500, marginBottom: 18 }}>
                 {error}
               </div>
             )}

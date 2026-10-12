@@ -2,37 +2,46 @@
 // whole app re-themes when <html data-theme> flips. Fallbacks = light values,
 // so colors still render even if the stylesheet hasn't loaded.
 export const C = {
-  pageBg: 'var(--c-pageBg, #F7F7F3)',
-  sidebarBg: 'var(--c-sidebarBg, #FAF9F5)',
-  sidebarBorder: 'var(--c-sidebarBorder, #E5E5E0)',
-  // headerBg: 'var(--c-headerBg, #0F0F10)',
-  headerBg: 'var(--c-headerBg, #151595)',
-  headerText: 'var(--c-headerText, #F5F5F2)',
-  headerMuted: 'var(--c-headerMuted, #A1A1AA)',
-  headerBorder: 'var(--c-headerBorder, rgba(255,255,255,.12))',
-  headerSurface: 'var(--c-headerSurface, rgba(255,255,255,.06))',
+  // navy shell (topbar, sidebar, footer, login brand panel)
+  navy: 'var(--c-navy, #071B35)',
+  navyRaised: 'var(--c-navyRaised, #0C2645)',
+  navyLine: 'var(--c-navyLine, rgba(140,180,230,.12))',
+  onNavy: 'var(--c-onNavy, #E8F0FA)',
+  onNavyMuted: 'var(--c-onNavyMuted, #8EA3BF)',
+  brandCyan: 'var(--c-brandCyan, #00C0F0)',
+  brandViolet: 'var(--c-brandViolet, #8B6CF0)',
+  brandGradient: 'var(--c-brandGradient, linear-gradient(135deg, #00C0F0 0%, #3E8DF3 50%, #8B6CF0 100%))',
+  pageBg: 'var(--c-pageBg, #EEF3F9)',
+  sidebarBg: 'var(--c-sidebarBg, #071B35)',
+  sidebarBorder: 'var(--c-sidebarBorder, rgba(140,180,230,.12))',
+  headerBg: 'var(--c-headerBg, #071B35)',
+  headerText: 'var(--c-headerText, #E8F0FA)',
+  headerMuted: 'var(--c-headerMuted, #8EA3BF)',
+  headerBorder: 'var(--c-headerBorder, rgba(140,180,230,.16))',
+  headerSurface: 'var(--c-headerSurface, rgba(140,180,230,.08))',
   cardBg: 'var(--c-cardBg, #ffffff)',
-  border: 'var(--c-border, #E5E5E0)',
-  borderDark: 'var(--c-borderDark, #d1d7db)',
-  text: 'var(--c-text, #111111)',
-  textSecondary: 'var(--c-textSecondary, #6B7280)',
-  textMuted: 'var(--c-textMuted, #8696a0)',
-  primary: 'var(--c-primary, #dc2626)',
-  primaryHover: 'var(--c-primaryHover, #b91c1c)',
-  primaryLight: 'var(--c-primaryLight, #FCEBEB)',
-  primaryText: 'var(--c-primaryText, #111b21)',
-  purple: 'var(--c-purple, #534AB7)',
-  green: 'var(--c-green, #0F6E56)',
+  border: 'var(--c-border, #DCE4EE)',
+  borderDark: 'var(--c-borderDark, #C6D2E1)',
+  text: 'var(--c-text, #0B1A2E)',
+  textSecondary: 'var(--c-textSecondary, #48596F)',
+  textMuted: 'var(--c-textMuted, #7A8CA4)',
+  primary: 'var(--c-primary, #0E74D4)',
+  primaryHover: 'var(--c-primaryHover, #0A5DAD)',
+  primaryLight: 'var(--c-primaryLight, #E4F1FC)',
+  primaryText: 'var(--c-primaryText, #0B1A2E)',
+  purple: 'var(--c-purple, #6D4FE0)',
+  green: 'var(--c-green, #0F8A6A)',
   amber: 'var(--c-amber, #E8A317)',
-  shadowSm: 'var(--c-shadowSm, 0 1px 2px rgba(0,0,0,.08))',
-  shadowMd: 'var(--c-shadowMd, 0 8px 24px rgba(0,0,0,.06))',
-  shadowLg: 'var(--c-shadowLg, 0 20px 60px rgba(0,0,0,.15))',
-  waBg: 'var(--c-waBg, #e5ddd5)',
+  danger: 'var(--c-danger, #D92D3A)',
+  shadowSm: 'var(--c-shadowSm, 0 1px 2px rgba(7,27,53,.08))',
+  shadowMd: 'var(--c-shadowMd, 0 8px 24px rgba(7,27,53,.07))',
+  shadowLg: 'var(--c-shadowLg, 0 24px 64px rgba(7,27,53,.22))',
+  waBg: 'var(--c-waBg, #E7EDF4)',
   // neutral surface aliases (used when migrating literal-heavy views)
   surface: 'var(--c-surface, #ffffff)',
-  surfaceAlt: 'var(--c-surfaceAlt, #F7F7F3)',
-  hover: 'var(--c-hover, #EFEEE6)',
-  waBgPattern: 'url("data:image/svg+xml,%3Csvg width=\'16\' height=\'16\' viewBox=\'0 0 16 16\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M0 0h8v8H0z\' fill=\'%23d1d7db\' fill-opacity=\'0.15\'/%3E%3C/svg%3E")',
+  surfaceAlt: 'var(--c-surfaceAlt, #F5F8FC)',
+  hover: 'var(--c-hover, #E9F0F8)',
+  waBgPattern: 'url("data:image/svg+xml,%3Csvg width=\'16\' height=\'16\' viewBox=\'0 0 16 16\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M0 0h8v8H0z\' fill=\'%23C6D2E1\' fill-opacity=\'0.15\'/%3E%3C/svg%3E")',
 };
 
 export const CHAT = {
@@ -44,12 +53,14 @@ export const CHAT = {
   bubbleRadius: '7.5px',
   bubblePadding: '6px 7px 8px 9px',
   statusDelivered: 'var(--c-statusDelivered, #53bdeb)',
-  statusRead: 'var(--c-statusRead, #53bdeb)',
+  statusRead: 'var(--c-statusRead, #2F9BEF)',
   statusSent: 'var(--c-statusSent, #8696a0)',
 };
 
-export const FONT = "'DM Sans', system-ui, sans-serif";
-export const MONO = "'DM Mono', monospace";
+export const FONT = "'Manrope Variable', 'Manrope', system-ui, sans-serif";
+// Brand display face — matches the Montserrat-style wordmark in the logo.
+export const BRAND_FONT = "'Montserrat', 'Manrope Variable', system-ui, sans-serif";
+export const MONO = "'JetBrains Mono', ui-monospace, monospace";
 
 export function relativeTime(ts) {
   const d = new Date(ts);
