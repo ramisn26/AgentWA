@@ -10,6 +10,7 @@ const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 const pool = require('./db');
 const { router: authRouter, authMiddleware, ensureTables } = require('./auth');
+const { customerGate } = require('./middleware/customerGate');
 const { router: messagesRouter } = require('./routes/messages');
 const { router: webhookRouter } = require('./routes/webhook');
 const { router: categoriesRouter } = require('./routes/categories');
@@ -127,6 +128,11 @@ app.use('/api', googleIntegrationsPublicRouter);
 
 // Auth routes (public)
 app.use('/api', authRouter);
+
+// Customer (onboarded client) users: deny-by-default allowlist. Runs once for
+// every authenticated /api request before any feature router; non-customer
+// roles pass straight through.
+app.use('/api', authMiddleware, customerGate);
 
 // Protected routes
 app.use('/api', authMiddleware, messagesRouter);

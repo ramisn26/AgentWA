@@ -1,8 +1,8 @@
 const { Router } = require('express');
 const pool = require('../db');
 const { encrypt, decrypt, maskSecret } = require('../util/crypto');
-const { adminOnly } = require('../middleware/access');
-const { isAdmin } = require('../permissions');
+const { adminOnly, customerScope, customerOwnsNumber } = require('../middleware/access');
+const { isAdmin, isCustomer } = require('../permissions');
 
 const router = Router();
 
@@ -62,6 +62,11 @@ router.get('/whatsapp-accounts', async (req, res) => {
         ORDER BY is_default DESC, display_name ASC`,
       [req.query.activeOnly === 'true' ? true : null]
     );
+    if (isCustomer(req.user)) {
+      // Customers only see the account(s) for their own number(s), no secrets.
+      const { accountIds } = await customerScope(req.user.id);
+      return res.json(rows.filter(r => accountIds.includes(Number(r.id))).map(r => publicShape(r, { includeSecrets: false })));
+    }
     const includeSecrets = isAdmin(req.user);
     res.json(rows.map(r => publicShape(r, { includeSecrets })));
   } catch (err) {
@@ -73,6 +78,9 @@ router.get('/whatsapp-accounts', async (req, res) => {
 // Resolve account by phone (must be registered before :id so it doesn't match :id=by-phone)
 router.get('/whatsapp-accounts/by-phone/:phone', async (req, res) => {
   try {
+    if (isCustomer(req.user) && !(await customerOwnsNumber(req, req.params.phone))) {
+      return res.status(404).json({ error: 'No WhatsApp Business account registered for this phone' });
+    }
     const acc = await getAccountByPhoneNumber(req.params.phone);
     if (!acc) return res.status(404).json({ error: 'No WhatsApp Business account registered for this phone' });
     res.json({

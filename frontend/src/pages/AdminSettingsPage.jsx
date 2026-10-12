@@ -22,12 +22,16 @@ const TABS = [
   { key: 'users', label: 'Users', icon: UsersIcon },
 ];
 
-// Two roles ship today: admin (full access) and bda_sales (labelled "Sales").
+// Roles: admin (full access), bda_sales ("Sales" — assigned chats only) and
+// customer (an onboarded client business — Chats + Bulk Message only, limited
+// to the WhatsApp number(s) picked below).
 const ROLE_OPTIONS = [
   { value: 'admin', label: 'Admin' },
   { value: 'bda_sales', label: 'Sales' },
+  { value: 'customer', label: 'Customer (Chats + Broadcast)' },
 ];
-const ROLE_LABEL = { admin: 'Admin', bda_sales: 'Sales', viewer: 'Viewer' };
+const ROLE_LABEL = { admin: 'Admin', bda_sales: 'Sales', customer: 'Customer', viewer: 'Viewer' };
+const digitsOnly = (v) => String(v || '').replace(/\D/g, '');
 
 const FIELD_TYPE_OPTIONS = [
   { value: 'text', label: 'Text' },
@@ -1309,13 +1313,15 @@ function FieldsTab({ fields, onRefresh }) {
 /*  Users (admin-only multi-user management)                           */
 /* ------------------------------------------------------------------ */
 function RoleBadge({ role }) {
-  const isAdmin = role === 'admin';
+  const palette = role === 'admin' ? ['#EEF2FF', '#4338CA']
+    : role === 'customer' ? ['#FFF7ED', '#C2410C']
+    : ['#ECFDF5', '#047857'];
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 4,
       padding: '2px 9px', borderRadius: 999, fontSize: 11, fontWeight: 700,
-      background: isAdmin ? '#EEF2FF' : '#ECFDF5',
-      color: isAdmin ? '#4338CA' : '#047857',
+      background: palette[0],
+      color: palette[1],
     }}>
       <Shield size={11} /> {ROLE_LABEL[role] || role}
     </span>
@@ -1332,13 +1338,19 @@ function UsersTab({ currentUser }) {
   const [deleteModal, setDeleteModal] = useState({ open: false, user: null });
   const [cred, setCred] = useState(null); // { username, password } shown once
 
-  const blank = { displayName: '', username: '', email: '', role: 'bda_sales', password: '', isActive: true };
+  const blank = { displayName: '', username: '', email: '', role: 'bda_sales', password: '', isActive: true, waNumbers: [] };
   const [form, setForm] = useState(blank);
+  const [accounts, setAccounts] = useState([]); // connected WhatsApp numbers for the customer picker
 
   const load = async () => {
     setLoading(true);
     try {
-      setUsers(await api.users.list());
+      const [userList, accts] = await Promise.all([
+        api.users.list(),
+        api.whatsappAccounts.list().catch(() => []),
+      ]);
+      setUsers(userList);
+      setAccounts((accts || []).filter(a => a.displayPhoneNumber));
       setError(null);
     } catch (err) {
       setError(err.message);
@@ -1351,13 +1363,20 @@ function UsersTab({ currentUser }) {
   const openAdd = () => { setEditing(null); setForm(blank); setShowForm(true); };
   const openEdit = (u) => {
     setEditing(u);
-    setForm({ displayName: u.displayName || '', username: u.username, email: u.email, role: u.role, password: '', isActive: u.isActive !== false });
+    setForm({ displayName: u.displayName || '', username: u.username, email: u.email, role: u.role, password: '', isActive: u.isActive !== false, waNumbers: (u.assignedWaNumbers || []).map(digitsOnly) });
     setShowForm(true);
   };
 
   const save = async () => {
     if (!form.displayName.trim()) { alert('Display name is required'); return; }
     if (!editing && (!form.username.trim() || !form.email.trim())) { alert('Username and email are required'); return; }
+    const isCustomer = form.role === 'customer';
+    if (isCustomer && form.waNumbers.length === 0) { alert('Pick at least one WhatsApp number for this customer'); return; }
+    // Number ownership is only managed here for customers; leaving the
+    // customer role clears it so the old numbers don't linger.
+    const numberPatch = isCustomer
+      ? { assignedWaNumbers: form.waNumbers }
+      : (editing?.role === 'customer' ? { assignedWaNumbers: [] } : {});
     setSaving(true);
     try {
       if (editing) {
@@ -1366,6 +1385,7 @@ function UsersTab({ currentUser }) {
           email: form.email.trim(),
           role: form.role,
           isActive: form.isActive,
+          ...numberPatch,
         });
       } else {
         const created = await api.users.create({
@@ -1374,6 +1394,7 @@ function UsersTab({ currentUser }) {
           displayName: form.displayName.trim(),
           role: form.role,
           password: form.password.trim() || undefined,
+          ...numberPatch,
         });
         // Show the (possibly generated) password once.
         setCred({ username: created.username, password: created.password });
@@ -1424,7 +1445,7 @@ function UsersTab({ currentUser }) {
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: C.text, margin: 0, letterSpacing: '-.02em', fontFamily: FONT }}>Users</h1>
           <p style={{ fontSize: 12, color: C.textMuted, margin: '4px 0 0', fontFamily: FONT }}>
-            Create admin and sales users. Sales users see only the chats &amp; contacts assigned to them.
+            Create admin, sales and customer users. Sales users see only the chats &amp; contacts assigned to them. Customers see only Chats and Bulk Message for their own WhatsApp number.
           </p>
         </div>
         <button onClick={openAdd} style={{
@@ -1445,8 +1466,8 @@ function UsersTab({ currentUser }) {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: FONT, fontSize: 13 }}>
               <thead>
                 <tr style={{ background: 'var(--c-hover)' }}>
-                  {['User', 'Email', 'Role', 'Status', 'Actions'].map((h, i) => (
-                    <th key={h} style={{ padding: '12px 16px', textAlign: i === 4 ? 'right' : 'left', fontWeight: 600, color: C.textSecondary, borderBottom: `1px solid ${C.border}` }}>{h}</th>
+                  {['User', 'Email', 'Role', 'WhatsApp numbers', 'Status', 'Actions'].map((h, i) => (
+                    <th key={h} style={{ padding: '12px 16px', textAlign: i === 5 ? 'right' : 'left', fontWeight: 600, color: C.textSecondary, borderBottom: `1px solid ${C.border}` }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -1461,6 +1482,14 @@ function UsersTab({ currentUser }) {
                       </td>
                       <td style={{ padding: '12px 16px', color: C.textSecondary }}>{u.email}</td>
                       <td style={{ padding: '12px 16px' }}><RoleBadge role={u.role} /></td>
+                      <td style={{ padding: '12px 16px', color: C.textSecondary, fontSize: 12 }}>
+                        {u.role === 'customer'
+                          ? ((u.assignedWaNumbers || []).map(n => {
+                              const acc = accounts.find(a => digitsOnly(a.displayPhoneNumber) === digitsOnly(n));
+                              return acc ? `${acc.displayName} (+${digitsOnly(n)})` : `+${digitsOnly(n)}`;
+                            }).join(', ') || '—')
+                          : <span style={{ color: C.textMuted }}>—</span>}
+                      </td>
                       <td style={{ padding: '12px 16px' }}>
                         <button onClick={() => !isSelf && toggleActive(u)} disabled={isSelf}
                           title={isSelf ? "You can't disable yourself" : 'Toggle active'}
@@ -1529,6 +1558,40 @@ function UsersTab({ currentUser }) {
               <label style={labelStyle}>Email</label>
               <input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="priya@company.com" style={inputStyle} />
             </div>
+            {form.role === 'customer' && (
+              <div style={{ marginBottom: 14 }}>
+                <label style={labelStyle}>WhatsApp numbers</label>
+                <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 8 }}>
+                  This customer will see every chat and broadcast on these numbers, and nothing else.
+                </div>
+                {accounts.length === 0 ? (
+                  <div style={{ fontSize: 13, color: '#B45309', background: '#FFFBEB', padding: 10, borderRadius: 8 }}>
+                    No WhatsApp numbers connected yet. Connect the customer's number in WhatsApp Accounts first.
+                  </div>
+                ) : (
+                  <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, maxHeight: 180, overflowY: 'auto' }}>
+                    {accounts.map(a => {
+                      const num = digitsOnly(a.displayPhoneNumber);
+                      const checked = form.waNumbers.includes(num);
+                      return (
+                        <label key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', cursor: 'pointer', borderBottom: `1px solid ${C.border}`, fontSize: 13, color: C.text }}>
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => setForm({
+                              ...form,
+                              waNumbers: checked ? form.waNumbers.filter(n => n !== num) : [...form.waNumbers, num],
+                            })}
+                          />
+                          <span style={{ fontWeight: 600 }}>{a.displayName}</span>
+                          <span style={{ color: C.textMuted, marginLeft: 'auto', fontFamily: MONO, fontSize: 12 }}>+{num}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
             {!editing && (
               <div style={{ marginBottom: 14 }}>
                 <label style={labelStyle}>Password <span style={{ fontWeight: 400, textTransform: 'none', color: C.textMuted }}>(optional — auto-generated if blank)</span></label>

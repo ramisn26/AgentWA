@@ -9,7 +9,7 @@ import { C, FONT, MONO, maskPhone, darkenColor } from '../constants.js';
 import MaskedNumber from '../components/MaskedNumber.jsx';
 import SearchableSelect from '../components/SearchableSelect.jsx';
 
-const ROLE_LABEL_MAP = { admin: 'Admin', bda_sales: 'Sales', viewer: 'Viewer' };
+const ROLE_LABEL_MAP = { admin: 'Admin', bda_sales: 'Sales', customer: 'Customer', viewer: 'Viewer' };
 
 function TagBadge({ tag, onRemove }) {
   return (

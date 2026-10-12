@@ -11,8 +11,8 @@ const { uploadMedia } = require('../integrations/metaSend');
 const { markAccountHealth, classifyMetaError } = require('../services/accountHealth');
 const storage = require('../util/pgStorage');
 const { syncMediaToAccount } = require('./mediaLibrary');
-const { assertWaAccess, assertContactAccess } = require('../middleware/access');
-const { isAdmin } = require('../permissions');
+const { assertWaAccess, assertContactAccess, customerScope } = require('../middleware/access');
+const { isAdmin, isCustomer } = require('../permissions');
 const { canonicalizeMime, chatKindFor, CHAT_TYPES_MSG } = require('../util/metaMime');
 const ExcelJS = require('exceljs');
 const { Readable } = require('stream');
@@ -173,7 +173,13 @@ router.get('/numbers', async (req, res) => {
     // one contact assigned to them on that number. Admin sees everything.
     let extraFilter = '';
     const params = [];
-    if (!isAdmin(req.user)) {
+    const customer = isCustomer(req.user);
+    const scope = customer ? await customerScope(req.user.id) : null;
+    if (customer) {
+      // Customer: whole-number ownership (all chats on their own number(s)).
+      params.push(scope.numbers);
+      extraFilter = `AND regexp_replace(wa_number, '[^0-9]', '', 'g') = ANY($${params.length}::text[])`;
+    } else if (!isAdmin(req.user)) {
       params.push(req.user.id);
       extraFilter = `AND wa_number IN (
         SELECT DISTINCT wa_number FROM coexistence.contacts WHERE assigned_user_id = $${params.length}
@@ -205,7 +211,10 @@ router.get('/numbers', async (req, res) => {
     const unreadParams = [];
     let unreadJoin = '';
     let unreadAssign = '';
-    if (!isAdmin(req.user)) {
+    if (customer) {
+      unreadParams.push(scope.numbers);
+      unreadAssign = `AND regexp_replace(ch.wa_number, '[^0-9]', '', 'g') = ANY($${unreadParams.length}::text[])`;
+    } else if (!isAdmin(req.user)) {
       unreadParams.push(req.user.id);
       unreadJoin = `JOIN coexistence.contacts c
         ON c.wa_number = ch.wa_number AND c.contact_number = ch.contact_number`;
@@ -268,12 +277,14 @@ router.get('/numbers', async (req, res) => {
     // Admins also see every connected, active WhatsApp account even before it
     // has any messages, so a freshly added number can be picked in the broadcast
     // "From" list and in Chats. (Non-admin users stay scoped to their contacts.)
-    if (isAdmin(req.user)) {
+    if (isAdmin(req.user) || customer) {
       const seen = new Set(enriched.map(r => String(r.wa_number).replace(/\D/g, '')));
       const { rows: accts } = await pool.query(
         `SELECT display_name, display_phone_number FROM coexistence.whatsapp_accounts
           WHERE is_active = TRUE AND display_phone_number IS NOT NULL AND display_phone_number <> ''
-          ORDER BY is_default DESC, id ASC`
+            AND ($1::text[] IS NULL OR regexp_replace(display_phone_number, '[^0-9]', '', 'g') = ANY($1::text[]))
+          ORDER BY is_default DESC, id ASC`,
+        [customer ? scope.numbers : null]
       );
       for (const a of accts) {
         const digits = String(a.display_phone_number).replace(/\D/g, '');
@@ -313,7 +324,7 @@ router.get('/contacts', async (req, res) => {
     const params = [waNumber];
     let joinKind = 'LEFT JOIN';
     let assignFilter = '';
-    if (!isAdmin(req.user)) {
+    if (!isAdmin(req.user) && !isCustomer(req.user)) {
       joinKind = 'INNER JOIN';
       params.push(req.user.id);
       assignFilter = `AND c.assigned_user_id = $${params.length}`;
@@ -409,7 +420,9 @@ router.post('/contacts/save', async (req, res) => {
     //   - admin + omitted → preserve existing (or NULL on a brand-new row)
     let setAssign = false;
     let assignVal = null;
-    if (!admin) {
+    if (isCustomer(req.user)) {
+      setAssign = false; // customers never touch internal chat assignment
+    } else if (!admin) {
       setAssign = true;
       assignVal = req.user.id;
     } else if (assignedUserId !== undefined) {
@@ -629,7 +642,7 @@ router.get('/saved-contacts', async (req, res) => {
 
     const params = [waNumber];
     let assignFilter = '';
-    if (!isAdmin(req.user)) {
+    if (!isAdmin(req.user) && !isCustomer(req.user)) {
       params.push(req.user.id);
       assignFilter = `AND assigned_user_id = $${params.length}`;
     }
@@ -806,7 +819,7 @@ router.get('/contact-names', async (req, res) => {
 
     const params = [waNumber];
     let assignFilter = '';
-    if (!isAdmin(req.user)) {
+    if (!isAdmin(req.user) && !isCustomer(req.user)) {
       params.push(req.user.id);
       assignFilter = `AND assigned_user_id = $${params.length}`;
     }
@@ -834,6 +847,7 @@ router.get('/messages/window-status', async (req, res) => {
   try {
     const { waNumber, contactNumber } = req.query;
     if (!waNumber || !contactNumber) return res.status(400).json({ error: 'waNumber and contactNumber required' });
+    if (!(await assertContactAccess(req, res, waNumber, contactNumber))) return;
     const { account, error } = await resolveAccount({ fromPhoneNumber: waNumber });
     if (error) return res.json({ canSendFreeForm: false, reason: error, windowSeconds: SERVICE_WINDOW_SECONDS });
     const secs = await secondsSinceLastIncoming({ accountPhoneNumberId: account.phoneNumberId, contactNumber });

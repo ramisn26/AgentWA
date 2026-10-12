@@ -935,7 +935,7 @@ export default function ChatWindow({ waNumber, contactNumber, onContactSaved }) 
                     </button>
                     {assignableUsers.filter(u => u.isActive !== false).map(u => {
                       const sel = Number(assignedUserId) === Number(u.id);
-                      const roleLabel = { admin: 'Admin', bda_sales: 'Sales', viewer: 'Viewer' }[u.role] || u.role;
+                      const roleLabel = { admin: 'Admin', bda_sales: 'Sales', customer: 'Customer', viewer: 'Viewer' }[u.role] || u.role;
                       return (
                         <button
                           key={u.id}

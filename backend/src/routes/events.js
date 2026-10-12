@@ -11,6 +11,8 @@
 
 const { Router } = require('express');
 const bus = require('../events');
+const { isCustomer } = require('../permissions');
+const { customerScope } = require('../middleware/access');
 
 const router = Router();
 
@@ -18,7 +20,14 @@ const router = Router();
 // a one-liner here + a bus.emit() at the source.
 const FORWARDED_EVENTS = ['message-status'];
 
-router.get('/events', (req, res) => {
+router.get('/events', async (req, res) => {
+  // Customers: forward only events for their own WhatsApp number(s).
+  let allowNumbers = null;
+  if (isCustomer(req.user)) {
+    try { allowNumbers = new Set((await customerScope(req.user.id)).numbers); }
+    catch { return res.status(500).end(); }
+  }
+
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
@@ -39,7 +48,10 @@ router.get('/events', (req, res) => {
 
   const handlers = {};
   for (const event of FORWARDED_EVENTS) {
-    handlers[event] = (payload) => writeEvent(event, payload);
+    handlers[event] = (payload) => {
+      if (allowNumbers && !allowNumbers.has(String(payload?.waNumber || '').replace(/\D/g, ''))) return;
+      writeEvent(event, payload);
+    };
     bus.on(event, handlers[event]);
   }
 

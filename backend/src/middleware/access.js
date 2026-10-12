@@ -4,7 +4,7 @@
 // checks against the optional per-user overrides we re-load the row.
 
 const pool = require('../db');
-const { isAdmin, hasPermission } = require('../permissions');
+const { isAdmin, isCustomer, hasPermission } = require('../permissions');
 
 // adminOnly: simple gate on req.user.role
 function adminOnly(req, res, next) {
@@ -45,6 +45,30 @@ async function userWaNumbers(userId) {
     [userId]
   );
   return rows.map(r => r.wa_number);
+}
+
+// ─── Customer (onboarded client) ownership ─────────────────────────────────
+// A customer owns whole WhatsApp numbers (user_wa_assignments) and sees every
+// conversation, broadcast, template and media item that belongs to them —
+// and nothing else. Numbers are compared digits-only everywhere.
+const digits = (v) => String(v || '').replace(/\D/g, '');
+
+async function customerScope(userId) {
+  const numbers = (await userWaNumbers(userId)).map(digits).filter(Boolean);
+  if (numbers.length === 0) return { numbers: [], accountIds: [] };
+  const { rows } = await pool.query(
+    `SELECT id FROM coexistence.whatsapp_accounts
+      WHERE regexp_replace(COALESCE(display_phone_number, ''), '[^0-9]', '', 'g') = ANY($1::text[])`,
+    [numbers]
+  );
+  return { numbers, accountIds: rows.map(r => Number(r.id)) };
+}
+
+async function customerOwnsNumber(req, waNumber) {
+  const clean = digits(waNumber);
+  if (!clean) return false;
+  const owned = (await userWaNumbers(req.user.id)).map(digits);
+  return owned.includes(clean);
 }
 
 // Build a SQL fragment + params to scope a query to "rows visible to req.user".
@@ -91,6 +115,11 @@ async function buildWaScope(req, tableAlias, startParamIndex) {
 // `assertContactAccess(waNumber, contactNumber)` below.
 async function assertWaAccess(req, res, waNumber) {
   if (isAdmin(req.user)) return true;
+  if (isCustomer(req.user)) {
+    if (await customerOwnsNumber(req, waNumber)) return true;
+    res.status(403).json({ error: 'You do not have access to this WhatsApp number' });
+    return false;
+  }
   const clean = String(waNumber || '').replace(/\D/g, '');
   const { rows } = await pool.query(
     `SELECT 1 FROM coexistence.contacts
@@ -108,6 +137,12 @@ async function assertWaAccess(req, res, waNumber) {
 // contact whose assigned_user_id matches the current user. Admin bypasses.
 async function assertContactAccess(req, res, waNumber, contactNumber) {
   if (isAdmin(req.user)) return true;
+  // Customers own the whole number: every conversation on it is theirs.
+  if (isCustomer(req.user)) {
+    if (contactNumber && await customerOwnsNumber(req, waNumber)) return true;
+    res.status(403).json({ error: 'You do not have access to this conversation' });
+    return false;
+  }
   const cleanWa = String(waNumber || '').replace(/\D/g, '');
   const cleanContact = String(contactNumber || '').replace(/\D/g, '');
   const { rows } = await pool.query(
@@ -151,5 +186,7 @@ module.exports = {
   buildWaScope,
   assertWaAccess,
   assertContactAccess,
+  customerScope,
+  customerOwnsNumber,
   auditLog,
 };

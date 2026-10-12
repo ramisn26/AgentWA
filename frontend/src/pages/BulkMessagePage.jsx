@@ -250,7 +250,8 @@ function formatSentTo(log) {
   return `${count} recipients`;
 }
 
-export default function BulkMessagePage({ onNavigate }) {
+export default function BulkMessagePage({ onNavigate, user }) {
+  const canBuildTemplates = !user || user.role === 'admin' || !Array.isArray(user.pages) || user.pages.includes('template-builder');
   const [view, setView] = useState('list'); // 'list' | 'detail'
   const [broadcasts, setBroadcasts] = useState([]);
   const [filterStatus, setFilterStatus] = useState('all');
@@ -1023,14 +1024,14 @@ export default function BulkMessagePage({ onNavigate }) {
                           searchPlaceholder="Search templates..."
                           emptyText="No templates found"
                           createLabel="Create new template"
-                          onCreate={() => onNavigate?.('template-builder', 'new')}
+                          onCreate={canBuildTemplates ? () => onNavigate?.('template-builder', 'new') : undefined}
                         />
                         {!newBroadcastFrom ? (
                           <div style={{ fontSize: 11, color: C.textMuted, marginTop: 4, fontFamily: FONT }}>Pick a sending number first.</div>
                         ) : !linkedAccount && accountLookupDone ? (
                           <div style={{ fontSize: 11, color: '#E65100', marginTop: 4, fontFamily: FONT }}>Templates are scoped to a WhatsApp Account — register the number above first.</div>
                         ) : eligibleTemplates.length === 0 && linkedAccount ? (
-                          <div style={{ fontSize: 11, color: C.textMuted, marginTop: 4, fontFamily: FONT }}>No approved templates for <strong>{linkedAccount.displayName}</strong>. Create one in Template Builder.</div>
+                          <div style={{ fontSize: 11, color: C.textMuted, marginTop: 4, fontFamily: FONT }}>No approved templates for <strong>{linkedAccount.displayName}</strong>. {canBuildTemplates ? 'Create one in Template Builder.' : 'Ask your administrator to add one.'}</div>
                         ) : null}
                       </div>
 

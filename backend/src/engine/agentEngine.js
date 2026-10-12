@@ -568,6 +568,9 @@ async function runAgent({ agentId, contactNumber, inboundMessageId, inboundText 
     const { withImageFallback } = require('../services/imageInput');
     // Order IDs: swap {{ORDER_ID:CRC}} for the next number of the series (atomic).
     require('../services/orderId').installOrderIdSubstitution(executors, { pool, agent });
+    // Conversation log: tracks tool calls, then logs the chat to the 'Conversations' tab after the reply is queued.
+    const convTracker = require('../services/conversationLog').createRunTracker({ pool, agent, contactNumber, getAccountWithToken });
+    convTracker.wrapExecutors(executors);
     const provider = withImageFallback(getProvider(agent.ai_provider), imageTurn);
     const result = await provider.runWithTools({
       systemPrompt: await require('../services/contactContext').addProfileName(
@@ -625,6 +628,7 @@ async function runAgent({ agentId, contactNumber, inboundMessageId, inboundText 
         payload: { body: result.finalText },
       });
     }
+    convTracker.finish({ finalText: result.finalText }); // non-blocking; the reply is already queued
     return { runId, status: finalStatus, finalText: result.finalText };
   } catch (err) {
     await pool.query(

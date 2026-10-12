@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
-const { requirePermission } = require('../middleware/access');
+const { requirePermission, customerScope, customerOwnsNumber } = require('../middleware/access');
+const { isCustomer } = require('../permissions');
 const { resolveAccount, insertPendingRow } = require('../services/messageSender');
 const { enqueueSend } = require('../queue/sendQueue');
 const { buildTemplateComponents, resolveTemplateText } = require('../services/templateComponents');
@@ -9,15 +10,20 @@ const { buildTemplateComponents, resolveTemplateText } = require('../services/te
 // Load per-recipient context (name + custom_fields + tags) so field-mapped
 // template variables (custom_fields.X / category_tag.X) resolve to each
 // contact's real value. Keyed by digits-only phone number.
-async function loadContactContext(numbers) {
+async function loadContactContext(numbers, scopeWaNumber = null) {
   const map = new Map();
   const list = [...new Set((numbers || []).map(n => String(n).replace(/\D/g, '')).filter(Boolean))];
   if (list.length === 0) return map;
+  // scopeWaNumber (customer broadcasts): only read the sending number's own
+  // contacts, so another business's contact data can never leak into
+  // personalised template variables.
+  const scope = scopeWaNumber ? String(scopeWaNumber).replace(/\D/g, '') : null;
   const { rows } = await pool.query(
     `SELECT regexp_replace(contact_number, '\\D', '', 'g') AS num, name, custom_fields, tags
        FROM coexistence.contacts
-      WHERE regexp_replace(contact_number, '\\D', '', 'g') = ANY($1::text[])`,
-    [list]
+      WHERE regexp_replace(contact_number, '\\D', '', 'g') = ANY($1::text[])
+        AND ($2::text IS NULL OR regexp_replace(wa_number, '\\D', '', 'g') = $2)`,
+    [list, scope]
   );
   for (const r of rows) { if (!map.has(r.num)) map.set(r.num, r); }
   return map;
@@ -225,12 +231,69 @@ async function getBroadcastWithLogs(id) {
   return { ...bRows[0], logs, statusRollup: rollup[0] || {} };
 }
 
+// ─── Customer scoping ─────────────────────────────────────────────────────────
+// Customers may only see/touch broadcasts sent FROM their own number(s), and may
+// only build them from their own account's templates and media. Anything else
+// answers 404 so other businesses' broadcasts aren't even confirmed to exist.
+
+// Every /broadcasts/:id route: ownership check before the handler runs.
+router.param('id', async (req, res, next, id) => {
+  if (!isCustomer(req.user)) return next();
+  try {
+    const { rows } = await pool.query(
+      'SELECT from_number FROM coexistence.broadcasts WHERE id = $1', [id]
+    );
+    if (rows.length === 0 || !(await customerOwnsNumber(req, rows[0].from_number))) {
+      return res.status(404).json({ error: 'Broadcast not found' });
+    }
+    next();
+  } catch (err) {
+    console.error('[broadcasts] customer scope error:', err.message);
+    res.status(400).json({ error: 'Invalid broadcast id' });
+  }
+});
+
+// Validate the parts of a create/update payload a customer could point at
+// someone else's resources. Returns an error string, or null when OK.
+async function customerPayloadError(req, { from_number, template_id, media_library_id }) {
+  if (!isCustomer(req.user)) return null;
+  const { numbers, accountIds } = await customerScope(req.user.id);
+  if (from_number != null && !numbers.includes(String(from_number).replace(/\D/g, ''))) {
+    return 'You can only send broadcasts from your own WhatsApp number';
+  }
+  if (template_id) {
+    const { rows } = await pool.query(
+      'SELECT whatsapp_account_id FROM coexistence.message_templates WHERE id = $1', [template_id]
+    );
+    if (!rows.length || !accountIds.includes(Number(rows[0].whatsapp_account_id))) {
+      return 'Template not found';
+    }
+  }
+  if (media_library_id) {
+    const { rows } = await pool.query(
+      'SELECT whatsapp_account_id FROM coexistence.media_library WHERE id = $1 AND deleted_at IS NULL', [media_library_id]
+    );
+    if (!rows.length || !accountIds.includes(Number(rows[0].whatsapp_account_id))) {
+      return 'Media not found';
+    }
+  }
+  return null;
+}
+
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
 // GET /broadcasts — list all with template name and live status rollup
 router.get('/broadcasts', async (req, res) => {
   try {
     const { status } = req.query;
+    const params = [];
+    const where = [];
+    if (status && status !== 'all') { params.push(status); where.push(`display_status = $${params.length}`); }
+    if (isCustomer(req.user)) {
+      const { numbers } = await customerScope(req.user.id);
+      params.push(numbers);
+      where.push(`regexp_replace(COALESCE(from_number, ''), '[^0-9]', '', 'g') = ANY($${params.length}::text[])`);
+    }
 
     const { rows } = await pool.query(
       `WITH base AS (
@@ -256,9 +319,9 @@ router.get('/broadcasts', async (req, res) => {
          LEFT JOIN coexistence.message_templates t ON t.id = b.template_id
        )
        SELECT * FROM base
-       ${status && status !== 'all' ? 'WHERE display_status = $1' : ''}
+       ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
        ORDER BY created_at DESC`,
-      status && status !== 'all' ? [status] : []
+      params
     );
     // Map display_status over status for the frontend
     res.json(rows.map(r => ({ ...r, status: r.display_status || r.status })));
@@ -302,6 +365,8 @@ router.post('/broadcasts', requirePermission('bulk-message'), async (req, res) =
     if (msgType === 'template' && !template_id) {
       return res.status(400).json({ error: 'template_id required for template broadcasts' });
     }
+    const scopeErr = await customerPayloadError(req, { from_number, template_id, media_library_id });
+    if (scopeErr) return res.status(403).json({ error: scopeErr });
 
     const client = await pool.connect();
     try {
@@ -367,6 +432,8 @@ router.put('/broadcasts/:id', requirePermission('bulk-message'), async (req, res
       from_number, recipient_numbers, template_id, test_number, name,
       variable_mapping, message_type, body, url, media_library_id, caption,
     } = req.body;
+    const scopeErr = await customerPayloadError(req, { from_number: from_number || null, template_id, media_library_id });
+    if (scopeErr) return res.status(403).json({ error: scopeErr });
 
     const { rows } = await pool.query(
       `UPDATE coexistence.broadcasts SET
@@ -448,7 +515,7 @@ router.post('/broadcasts/:id/send', requirePermission('bulk-message'), async (re
     // field-mapped variables (name / custom_fields / category_tag) resolve to
     // real per-contact values.
     const contactCtx = broadcast.message_type === 'template'
-      ? await loadContactContext(recipients.map(r => (typeof r === 'string' ? r : r.contact_number)))
+      ? await loadContactContext(recipients.map(r => (typeof r === 'string' ? r : r.contact_number)), isCustomer(req.user) ? broadcast.from_number : null)
       : new Map();
 
     // Resolve media once for media-type broadcasts

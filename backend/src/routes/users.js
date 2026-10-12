@@ -65,6 +65,22 @@ function validateRole(role) {
   }
 }
 
+// Customers (onboarded clients) must own at least one WhatsApp number, and every
+// number must be a connected account — otherwise they'd log in to an empty app
+// (or a typo would silently grant nothing).
+async function validateCustomerNumbers(list) {
+  const nums = [...new Set((Array.isArray(list) ? list : []).map(n => String(n).replace(/\D/g, '')).filter(Boolean))];
+  if (nums.length === 0) throw badRequest('Customer users need at least one WhatsApp number');
+  const { rows } = await pool.query(
+    `SELECT regexp_replace(display_phone_number, '[^0-9]', '', 'g') AS d
+       FROM coexistence.whatsapp_accounts WHERE display_phone_number IS NOT NULL`
+  );
+  const connected = new Set(rows.map(r => r.d));
+  const unknown = nums.filter(n => !connected.has(n));
+  if (unknown.length) throw badRequest(`Not a connected WhatsApp number: ${unknown.join(', ')}`);
+  return nums;
+}
+
 function validatePermissions(perms) {
   if (perms == null) return null;
   if (typeof perms !== 'object' || Array.isArray(perms)) {
@@ -117,6 +133,7 @@ router.post('/users', adminOnly, async (req, res) => {
       return res.status(400).json({ error: 'username, email and displayName are required' });
     }
     validateRole(role);
+    if (role === 'customer') await validateCustomerNumbers(assignedWaNumbers);
     const cleanPerms = validatePermissions(permissions);
     const finalPassword = password?.trim() || generatePassword();
     const hash = await bcrypt.hash(finalPassword, 10);
@@ -212,6 +229,17 @@ router.patch('/users/:id', adminOnly, async (req, res) => {
     if (req.body.role != null) {
       validateRole(req.body.role);
       set('role = $$', req.body.role);
+    }
+    const finalRole = req.body.role != null ? req.body.role : before.role;
+    if (finalRole === 'customer') {
+      if (Array.isArray(req.body.assignedWaNumbers)) {
+        await validateCustomerNumbers(req.body.assignedWaNumbers);
+      } else {
+        const { rows: cur } = await pool.query(
+          `SELECT wa_number FROM coexistence.user_wa_assignments WHERE user_id = $1`, [id]
+        );
+        await validateCustomerNumbers(cur.map(r => r.wa_number));
+      }
     }
     if (req.body.permissions !== undefined) {
       const cleanPerms = validatePermissions(req.body.permissions);

@@ -10,7 +10,8 @@ const storage = require('../util/pgStorage');
 const { uploadMedia: metaUploadMedia } = require('../integrations/metaSend');
 const { getAccountWithToken } = require('./whatsappAccounts');
 const { canonicalizeMime, isChatSendable, CHAT_TYPES_MSG } = require('../util/metaMime');
-const { requirePermission } = require('../middleware/access');
+const { requirePermission, customerScope } = require('../middleware/access');
+const { isCustomer } = require('../permissions');
 
 const router = Router();
 
@@ -85,7 +86,13 @@ router.get('/media-library', async (req, res) => {
     // Scope to the selected account, but also surface media that has no owner
     // yet (whatsapp_account_id IS NULL) — e.g. uploaded before any account was
     // connected — so it never becomes invisible. With no accountId, list all.
-    if (accountId) { params.push(accountId); accFilter = `AND (whatsapp_account_id = $${params.length} OR whatsapp_account_id IS NULL)`; }
+    if (isCustomer(req.user)) {
+      // Customers: strictly their own account(s) — no unowned/shared items.
+      const { accountIds } = await customerScope(req.user.id);
+      const scoped = accountId ? accountIds.filter(id => id === accountId) : accountIds;
+      params.push(scoped);
+      accFilter = `AND whatsapp_account_id = ANY($${params.length}::bigint[])`;
+    } else if (accountId) { params.push(accountId); accFilter = `AND (whatsapp_account_id = $${params.length} OR whatsapp_account_id IS NULL)`; }
     const { rows: media } = await pool.query(`
       SELECT * FROM coexistence.media_library
        WHERE deleted_at IS NULL ${accFilter}
@@ -221,11 +228,17 @@ router.get('/media-library/:id/download', async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     const { rows } = await pool.query(
-      `SELECT storage_key, mime_type, original_name, name
+      `SELECT storage_key, mime_type, original_name, name, whatsapp_account_id
          FROM coexistence.media_library WHERE id = $1 AND deleted_at IS NULL`,
       [id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Not found' });
+    if (isCustomer(req.user)) {
+      const { accountIds } = await customerScope(req.user.id);
+      if (!accountIds.includes(Number(rows[0].whatsapp_account_id))) {
+        return res.status(404).json({ error: 'Not found' });
+      }
+    }
     const buf = await storage.getObjectBuffer(rows[0].storage_key);
     res.setHeader('Content-Type', rows[0].mime_type);
     const displayName = rows[0].name || rows[0].original_name;

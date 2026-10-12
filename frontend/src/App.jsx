@@ -42,14 +42,19 @@ export default function App() {
 
   // Page guard: non-admins can only reach pages granted to them (user.pages).
   // admin-settings is allowed if they have any admin-settings:* sub-page.
+  // Disallowed pages redirect to the user's first allowed page (Customers have
+  // no Home, so they land on Chats) and are never rendered meanwhile.
+  const restricted = !!user && user.role !== 'admin' && Array.isArray(user.pages);
+  const pageAllowed = !restricted || (page === 'admin-settings'
+    ? user.pages.some(p => p.startsWith('admin-settings'))
+    : user.pages.includes(page));
+  const fallbackPage = restricted
+    ? (user.pages.includes('home') ? 'home' : (user.pages.find(p => VALID_PAGES.has(p)) || 'home'))
+    : 'home';
   useEffect(() => {
-    if (!user || user.role === 'admin' || !Array.isArray(user.pages)) return;
-    const allowed = page === 'admin-settings'
-      ? user.pages.some(p => p.startsWith('admin-settings'))
-      : user.pages.includes(page);
-    if (!allowed) setPage('home');
+    if (user && !pageAllowed && page !== fallbackPage) replaceRoute(fallbackPage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, user]);
+  }, [page, user, pageAllowed, fallbackPage]);
 
   useEffect(() => {
     // Collapse main sidebar by default on automation builder page
@@ -108,6 +113,7 @@ export default function App() {
   }
 
   const renderPage = () => {
+    if (!pageAllowed) return null;
     switch (page) {
       case 'home': return <HomePage user={user} onPageChange={setPage} />;
       case 'chats': return <ChatsPage subParts={subParts} navigate={navigate} user={user} />;
@@ -115,7 +121,7 @@ export default function App() {
       case 'pipelines': return <PipelinesPage user={user} />;
       case 'template-builder': return <TemplateBuilderPage subParts={subParts} navigate={navigate} />;
       case 'media-library': return <MediaLibraryPage />;
-      case 'bulk-message': return <BulkMessagePage onNavigate={navigate} />;
+      case 'bulk-message': return <BulkMessagePage onNavigate={navigate} user={user} />;
       case 'chatbot-builder': return <ChatbotBuilderPage subParts={subParts} navigate={navigate} />;
       case 'ai-agent-builder': return <AiAgentBuilderPage user={user} navigate={navigate} />;
       case 'about': return <AboutUsPage />;

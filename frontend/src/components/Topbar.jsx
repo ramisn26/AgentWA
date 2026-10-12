@@ -7,7 +7,15 @@ import { api } from '../api.js';
 const GITHUB_REPO = 'Forgemind-git/ForgeChat';
 const GITHUB_REPO_URL = `https://github.com/${GITHUB_REPO}`;
 
+const ROLE_TITLE = { admin: 'Owner', bda_sales: 'Sales', customer: 'Customer', viewer: 'Viewer' };
+
 export default function Topbar({ user, onLogout, onNavigate }) {
+  // Settings / About only for roles that can actually open them. Customers
+  // (Chats + Bulk Message only) never see links that would just bounce them.
+  const pages = Array.isArray(user?.pages) ? user.pages : null;
+  const isAdmin = user?.role === 'admin' || !pages;
+  const canSettings = isAdmin || pages.some(p => p.startsWith('admin-settings'));
+  const canAbout = isAdmin || pages.includes('about');
   const [userOpen, setUserOpen] = useState(false);
   const [unhealthyAccounts, setUnhealthyAccounts] = useState([]);
   const [stars, setStars] = useState(null);
@@ -48,7 +56,7 @@ export default function Topbar({ user, onLogout, onNavigate }) {
 
   return (
     <>
-    {unhealthyAccounts.length > 0 && (
+    {canSettings && unhealthyAccounts.length > 0 && (
       <div
         onClick={() => onNavigate('admin-settings')}
         style={{
@@ -148,7 +156,7 @@ export default function Topbar({ user, onLogout, onNavigate }) {
         </button>
 
         {/* About Us */}
-        <button
+        {canAbout && <button
           onClick={() => onNavigate('about')}
           title="About Us"
           style={{
@@ -163,7 +171,7 @@ export default function Topbar({ user, onLogout, onNavigate }) {
             justifyContent: 'center',
           }}>
           <Info size={16} color={C.headerText} />
-        </button>
+        </button>}
 
         {/* User avatar */}
         <div ref={ref} style={{ position: 'relative' }}>
@@ -209,10 +217,10 @@ export default function Topbar({ user, onLogout, onNavigate }) {
                   {user.displayName || user.username}
                 </div>
                 <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>
-                  Owner
+                  {ROLE_TITLE[user.role] || 'Owner'}
                 </div>
               </div>
-              <button
+              {canSettings && <button
                 onClick={() => { setUserOpen(false); onNavigate('admin-settings'); }}
                 style={{
                   width: '100%',
@@ -233,7 +241,7 @@ export default function Topbar({ user, onLogout, onNavigate }) {
               >
                 <Settings size={14} />
                 Settings
-              </button>
+              </button>}
               <button
                 onClick={() => { setUserOpen(false); onLogout(); }}
                 style={{
