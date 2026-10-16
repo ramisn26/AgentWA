@@ -568,9 +568,14 @@ async function runAgent({ agentId, contactNumber, inboundMessageId, inboundText 
     const { withImageFallback } = require('../services/imageInput');
     // Order IDs: swap {{ORDER_ID:CRC}} for the next number of the series (atomic).
     require('../services/orderId').installOrderIdSubstitution(executors, { pool, agent });
+    // Order guard: refuse to save an order whose Items and Total disagree (the AI must re-confirm the corrected total).
+    require('../services/orderGuard').installOrderGuard(executors, { agent });
     // Conversation log: tracks tool calls, then logs the chat to the 'Conversations' tab after the reply is queued.
     const convTracker = require('../services/conversationLog').createRunTracker({ pool, agent, contactNumber, getAccountWithToken });
     convTracker.wrapExecutors(executors);
+    // Estimate PDF: sends the invoice in the chat once the order is confirmed (after the reply is queued).
+    const invoiceHook = require('../services/invoiceDelivery').createInvoiceHook({ pool, agent, contactNumber, getAccountWithToken, insertPendingRow, enqueueSend });
+    invoiceHook.wrapExecutors(executors);
     const provider = withImageFallback(getProvider(agent.ai_provider), imageTurn);
     const result = await provider.runWithTools({
       systemPrompt: await require('../services/contactContext').addProfileName(
@@ -629,6 +634,7 @@ async function runAgent({ agentId, contactNumber, inboundMessageId, inboundText 
       });
     }
     convTracker.finish({ finalText: result.finalText }); // non-blocking; the reply is already queued
+    invoiceHook.finish(); // non-blocking; the confirmation reply is already queued
     return { runId, status: finalStatus, finalText: result.finalText };
   } catch (err) {
     await pool.query(
