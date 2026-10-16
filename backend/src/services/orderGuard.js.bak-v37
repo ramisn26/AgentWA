@@ -1,0 +1,109 @@
+// Gate in front of the Orders "append": an order is only saved when the Items cell and the Total agree.
+//
+// The AI adds up the cart itself, and can slip (wrong pack conversion, a line dropped from the cell, a mixed-up
+// S.No). That total goes to the customer, the UPI QR and the sheet, and the PDF is computed from the Items cell.
+// This guard recomputes the order from the Items cell with the catalogue + discount rule in the agent's own prompt
+// BEFORE anything is saved:
+//   * everything agrees            -> the save goes through untouched (no extra step, no extra delay)
+//   * Items cell unreadable / wrong -> rejected: ITEMS_INVALID  (+ the problem list)
+//   * Total differs from the Items  -> rejected: TOTAL_MISMATCH (+ the correct lines and totals block)
+// A rejected save burns no Order ID, creates no row and sends no QR. The tool result tells the AI to show the
+// corrected FINAL ORDER REVIEW and ask the customer to CONFIRM again; any further save in the same run is refused
+// (CONFIRMATION_REQUIRED), so the customer always confirms the amount that is actually charged.
+//
+// Install it right after the order-id wrapper (so a rejected save never consumes an Order ID).
+
+const fs = require('fs');
+const path = require('path');
+const { buildInvoiceData } = require('./invoiceFromOrder');
+const { computeTotals } = require('./invoicePdf');
+const { istNow } = require('./contactContext');
+
+const CONFIG_PATH = process.env.INVOICE_CONFIG || path.join(__dirname, '..', 'config', 'invoice.config.json');
+
+function enabledFor(agent) {            // same opt-in list as the invoice PDF: agents named in invoice.config.json
+  try {
+    const cfg = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+    const mine = cfg.agents && cfg.agents[String(agent.id)];
+    return !!mine && mine.enabled !== false;
+  } catch { return false; }
+}
+
+const rs = (n) => '₹' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 });
+const perCount = (per) => { const m = String(per || '').match(/^\s*(\d+)/); return m ? Number(m[1]) : 1; };
+
+function describe(totals) {
+  const lines = [];
+  for (const s of totals.sections) for (const l of s.lines) {
+    const n = perCount(l.content);
+    lines.push(n > 1
+      ? `${l.code} • ${l.name} — ${l.qty * n} Box → ${l.qty} × ₹${l.rate} = ${rs(l.amount / 100)}`
+      : `${l.code} • ${l.name} × ${l.qty} = ${rs(l.amount / 100)}`);
+  }
+  const block = [];
+  const reg = totals.sections.find((s) => s.discountPct);
+  const net = totals.sections.find((s) => !s.discountPct);
+  if (reg) { block.push(`Sub Total: ${rs(reg.sub / 100)}`); block.push(`🏷️ Discount ${reg.discountPct}%: −${rs(reg.disc / 100)}`); }
+  if (net) block.push(`Net-rate items (no discount): ${rs(net.total / 100)}`);
+  block.push(`💰 *PAYABLE TOTAL: ${rs(totals.net / 100)}*`);
+  return { lines, totalsBlock: block.join('\n') };
+}
+
+function isOrdersAppend(args) {
+  return !!args && Array.isArray(args.values) && typeof args.values[5] === 'string' && /\{\{ORDER_ID/.test(args.values[5]);
+}
+
+function verify(agent, values) {
+  const order = { date: values[0], name: values[1], whatsapp: values[2], items: values[3], total: values[4], orderId: 'PENDING', address: values[7] };
+  const { data, issues, computedTotal } = buildInvoiceData({ promptText: agent.system_prompt, order, business: {} });
+  if (issues.some((i) => /no catalogue found/.test(i.msg))) return { ok: true, skipped: 'no catalogue in the agent prompt' };   // cannot judge -> never block orders
+  const errors = issues.filter((i) => i.level === 'error');
+  if (errors.length) return { ok: false, error: 'ITEMS_INVALID', problems: errors.map((e) => e.msg) };
+  const totals = computeTotals(data.sections);
+  const mismatch = issues.find((i) => i.code === 'TOTAL_MISMATCH');
+  if (mismatch) {
+    const d = describe(totals);
+    return { ok: false, error: 'TOTAL_MISMATCH', saved_total: parseFloat(String(values[4]).replace(/[^0-9.]/g, '')), correct_total: computedTotal, lines: d.lines, totals_block: d.totalsBlock };
+  }
+  return { ok: true };
+}
+
+const INSTRUCTIONS = {
+  ITEMS_INVALID: 'NOTHING WAS SAVED and no Order ID exists. Fix the Items cell: every line must be "<S.No> - <exact catalogue product name> (<Per>) x<units>" using the S.No and the name of the SAME catalogue line. If the customer asked for something that is not in the catalogue, leave it out and tell them. Then show the corrected FINAL ORDER REVIEW and ask the customer to reply CONFIRM again. Do not save again in this turn and do not mention this error to the customer.',
+  TOTAL_MISMATCH: 'NOTHING WAS SAVED and no Order ID exists. The total you calculated is not the correct total for these items. Tell the customer, in one short friendly line, that the total has been corrected; show the FINAL ORDER REVIEW again using EXACTLY the lines and totals_block of this result (the PAYABLE TOTAL is final) and ask the customer to reply CONFIRM again. Do not save again in this turn and do not mention this error text to the customer.',
+  CONFIRMATION_REQUIRED: 'NOTHING WAS SAVED. The customer has not yet confirmed the corrected order. Wait for their next message; do not save in this turn.',
+};
+
+// The Date column is a FACT, not something the AI should author: write the real time (IST) on every order row.
+const DATE_LIKE = /^\s*(\d{1,2}[-\/.]\d{1,2}[-\/.]\d{4}|\d{4}-\d{2}-\d{2})/;
+function stampDate(args, isOrdersRow) {
+  if (!args || !Array.isArray(args.values) || args.values.length === 0) return;
+  if (isOrdersRow || (typeof args.values[0] === 'string' && DATE_LIKE.test(args.values[0]))) {
+    const real = istNow().stamp;
+    if (args.values[0] !== real) args.values[0] = real;
+  }
+}
+
+function installOrderGuard(executors, { agent }) {
+  if (!enabledFor(agent)) return;
+  const state = { rejected: false };
+  for (const name of Object.keys(executors)) {
+    const orig = executors[name];
+    if (typeof orig !== 'function') continue;
+    executors[name] = async (args) => {
+      // other appends (e.g. the DB tab row, which also starts with the date) are stamped too; updates (PAID, cancel) never are,
+      // because they re-send the ORIGINAL order date
+      if (!isOrdersAppend(args)) { if (/append/i.test(name)) stampDate(args, false); return orig(args); }
+      if (state.rejected) return { ok: false, error: 'CONFIRMATION_REQUIRED', instruction: INSTRUCTIONS.CONFIRMATION_REQUIRED };
+      let v;
+      try { v = verify(agent, args.values); }
+      catch (e) { console.warn('[orderGuard] check failed, letting the save through:', e.message); return orig(args); }   // never block orders because of a bug here
+      if (v.ok) { stampDate(args, true); return orig(args); }
+      state.rejected = true;
+      console.warn(`[orderGuard] save rejected (${v.error}): ${v.error === 'TOTAL_MISMATCH' ? `saved ${v.saved_total} vs correct ${v.correct_total}` : v.problems.join('; ')}`);
+      return { ...v, instruction: INSTRUCTIONS[v.error] };
+    };
+  }
+}
+
+module.exports = { installOrderGuard, verify, enabledFor };

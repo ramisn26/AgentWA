@@ -1,0 +1,19 @@
+{
+  "_help": "Per-agent estimate settings. Replace REPLACE_WITH_AGENT_ID with the Crackling agent's id (select id, name from coexistence.agents;). Agents not listed here never send a PDF.",
+  "agents": {
+    "5": {
+      "enabled": true,
+      "title": "ESTIMATE",
+      "numberLabel": "Order No",
+      "filePrefix": "Crackling_Estimate",
+      "caption": "🧾 *Estimate for Order {orderId}*\n💰 Payable: ₹{total}\nThank you for choosing Crackling! 🎆",
+      "business": {
+        "name": "Crackling",
+        "address": "61-P/3D, Gandhi Road, Rajiv Gandhi Nagar (Backside of Bus Stand) Sivakasi - 626 123",
+        "mobile": "9003303468",
+        "email": "prakashg.svk@gmail.com",
+        "paymentLines": [["UPI ID", "prakashg.svk@okicici"], ["Payee", "Crackling"]]
+      }
+    }
+  }
+}
